@@ -15,17 +15,25 @@ function setAuthStatus(message) {
   if (el) el.textContent = message;
 }
 
+function setStatus(message) {
+  const el = byId("status");
+  if (el) el.textContent = message;
+}
+
 function updateAuthUI(user) {
   const authBox = byId("authBox");
   const generatorArea = byId("generatorArea");
 
   if (user) {
-    if (authBox) authBox.style.display = "none";
-    if (generatorArea) generatorArea.style.display = "block";
+    authBox.style.display = "none";
+    generatorArea.style.display = "block";
+    loadStoredDocuments();
   } else {
-    if (authBox) authBox.style.display = "block";
-    if (generatorArea) generatorArea.style.display = "none";
+    authBox.style.display = "block";
+    generatorArea.style.display = "none";
     setAuthStatus("Not logged in");
+    docs = [];
+    docsLoaded = false;
   }
 }
 
@@ -78,15 +86,91 @@ async function signOutUser() {
   }
 }
 
+async function uploadDocuments() {
+  const files = byId("docs").files;
+  const { data: authData } = await supabaseClient.auth.getUser();
+  const user = authData.user;
+
+  if (!user) {
+    setStatus("You must be signed in.");
+    return;
+  }
+
+  if (!files.length) {
+    setStatus("Choose at least one file.");
+    return;
+  }
+
+  setStatus("Uploading...");
+
+  let uploaded = 0;
+
+  for (const file of files) {
+    const path = `${user.id}/${Date.now()}-${file.name}`;
+
+    const { error } = await supabaseClient.storage
+      .from("reference-docs")
+      .upload(path, file, {
+        upsert: false
+      });
+
+    if (error) {
+      console.error(error);
+      setStatus(`Upload failed: ${error.message}`);
+      return;
+    }
+
+    uploaded += 1;
+  }
+
+  setStatus(`${uploaded} file(s) uploaded.`);
+  await loadStoredDocuments();
+}
+
+async function loadStoredDocuments() {
+  const { data: authData } = await supabaseClient.auth.getUser();
+  const user = authData.user;
+
+  if (!user) return;
+
+  const { data, error } = await supabaseClient.storage
+    .from("reference-docs")
+    .list(user.id, {
+      limit: 100
+    });
+
+  if (error) {
+    console.error(error);
+    setStatus(`Could not load stored docs: ${error.message}`);
+    return;
+  }
+
+  if (!data || !data.length) {
+    docs = [];
+    docsLoaded = false;
+    setStatus("No stored documents yet.");
+    return;
+  }
+
+  docs = data.map(file => ({
+    name: file.name,
+    content: file.name.toLowerCase()
+  }));
+
+  docsLoaded = true;
+  setStatus(`${data.length} stored document(s) found.`);
+}
+
 function extractRelevant(topic) {
   const results = [];
   const t = topic.toLowerCase();
 
   for (const d of docs) {
-    if (d.content.includes(t)) {
+    if (d.content.includes(t) || d.name.toLowerCase().includes(t)) {
       results.push(d.name);
     }
   }
+
   return results;
 }
 
@@ -162,56 +246,13 @@ function exportPDF() {
   doc.save("DrillForge.pdf");
 }
 
-function initDocsUpload() {
-  const docsInput = byId("docs");
-  if (!docsInput) return;
-
-  docsInput.addEventListener("change", function (e) {
-    docs = [];
-    docsLoaded = false;
-
-    const files = e.target.files;
-    let loaded = 0;
-
-    if (!files.length) {
-      byId("status").textContent = "No documents loaded";
-      return;
-    }
-
-    for (const file of files) {
-      const reader = new FileReader();
-
-      reader.onload = function (evt) {
-        docs.push({
-          name: file.name,
-          content: String(evt.target.result).toLowerCase()
-        });
-
-        loaded += 1;
-
-        if (loaded === files.length) {
-          docsLoaded = true;
-          byId("status").textContent = `${files.length} docs ready`;
-        }
-      };
-
-      reader.readAsText(file);
-    }
-  });
-}
-
 function initButtons() {
   byId("signUpBtn").addEventListener("click", signUp);
   byId("signInBtn").addEventListener("click", signIn);
-
-  const signOutBtn = byId("signOutBtn");
-  if (signOutBtn) signOutBtn.addEventListener("click", signOutUser);
-
-  const generateBtn = byId("generateBtn");
-  if (generateBtn) generateBtn.addEventListener("click", generate);
-
-  const exportPdfBtn = byId("exportPdfBtn");
-  if (exportPdfBtn) exportPdfBtn.addEventListener("click", exportPDF);
+  byId("signOutBtn").addEventListener("click", signOutUser);
+  byId("generateBtn").addEventListener("click", generate);
+  byId("exportPdfBtn").addEventListener("click", exportPDF);
+  byId("uploadDocsBtn").addEventListener("click", uploadDocuments);
 }
 
 async function initAuth() {
@@ -230,6 +271,5 @@ async function initAuth() {
 
 window.onload = function () {
   initButtons();
-  initDocsUpload();
   initAuth();
 };
