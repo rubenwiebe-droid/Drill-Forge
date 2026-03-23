@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://ziaaklihkikgpzttppto.supabase.co";
-const SUPABASE_KEY = "sb_publishable_wJgkFs35Ko9evNW4JPZL9w_JVq2WVcS";
+const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -221,13 +221,12 @@ function initButtons() {
 }
 
 async function initAuth() {
-  const { data, error } = await supabaseClient.auth.getUser();
+  const { data, error } = await supabaseClient.auth.getSession();
 
   if (error) {
-    console.error(error);
     updateAuthUI(null);
   } else {
-    updateAuthUI(data.user);
+    updateAuthUI(data.session?.user ?? null);
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
