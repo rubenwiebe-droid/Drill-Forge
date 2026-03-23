@@ -1,21 +1,81 @@
 const SUPABASE_URL = "https://ziaaklihkikgpzttppto.supabase.co";
-const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+const SUPABASE_KEY = "sb_publishable_wJgkFs35Ko9evNW4JPZL9w_JVq2WVcS";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let docs = [];
 let docsLoaded = false;
 
+function setStatus(message) {
+  const el = document.getElementById("authStatus");
+  if (el) el.textContent = message;
+}
+
 function updateAuthUI(user) {
   const generatorArea = document.getElementById("generatorArea");
-  const authStatus = document.getElementById("authStatus");
 
   if (user) {
-    generatorArea.style.display = "block";
-    authStatus.textContent = `Signed in as ${user.email}`;
+    if (generatorArea) generatorArea.style.display = "block";
+    setStatus(`Signed in as ${user.email}`);
   } else {
-    generatorArea.style.display = "none";
-    authStatus.textContent = "Not logged in";
+    if (generatorArea) generatorArea.style.display = "none";
+    setStatus("Not logged in");
+  }
+}
+
+async function signUp() {
+  setStatus("Trying sign up...");
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    setStatus("Enter email and password");
+    return;
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    setStatus(error.message);
+  } else {
+    setStatus("Signup successful. Check your email if needed.");
+  }
+}
+
+async function signIn() {
+  setStatus("Trying sign in...");
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    setStatus("Enter email and password");
+    return;
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    setStatus(error.message);
+  }
+}
+
+async function signOutUser() {
+  setStatus("Signing out...");
+
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    setStatus(error.message);
+  } else {
+    setStatus("Signed out");
   }
 }
 
@@ -32,85 +92,41 @@ supabase.auth.onAuthStateChange((event, session) => {
   updateAuthUI(session?.user ?? null);
 });
 
-async function signUp() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+const docsInput = document.getElementById("docs");
+if (docsInput) {
+  docsInput.addEventListener("change", function (e) {
+    docs = [];
+    docsLoaded = false;
 
-  if (!email || !password) {
-    document.getElementById("authStatus").textContent = "Enter email and password";
-    return;
-  }
+    let files = e.target.files;
+    let loadedCount = 0;
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password
+    if (files.length === 0) {
+      document.getElementById("status").textContent = "No documents loaded";
+      return;
+    }
+
+    for (let file of files) {
+      let reader = new FileReader();
+
+      reader.onload = function (evt) {
+        docs.push({
+          name: file.name,
+          content: evt.target.result.toLowerCase()
+        });
+
+        loadedCount++;
+
+        if (loadedCount === files.length) {
+          docsLoaded = true;
+          document.getElementById("status").textContent = files.length + " documents ready";
+        }
+      };
+
+      reader.readAsText(file);
+    }
   });
-
-  document.getElementById("authStatus").textContent =
-    error ? error.message : "Signup successful. Check your email if confirmation is enabled.";
 }
-
-async function signIn() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-
-  if (!email || !password) {
-    document.getElementById("authStatus").textContent = "Enter email and password";
-    return;
-  }
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    document.getElementById("authStatus").textContent = error.message;
-  }
-}
-
-async function signOutUser() {
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    document.getElementById("authStatus").textContent = error.message;
-  } else {
-    document.getElementById("authStatus").textContent = "Signed out";
-  }
-}
-
-document.getElementById("docs").addEventListener("change", function (e) {
-  docs = [];
-  docsLoaded = false;
-
-  let files = e.target.files;
-  let loadedCount = 0;
-
-  if (files.length === 0) {
-    document.getElementById("status").textContent = "No documents loaded";
-    return;
-  }
-
-  for (let file of files) {
-    let reader = new FileReader();
-
-    reader.onload = function (evt) {
-      docs.push({
-        name: file.name,
-        content: evt.target.result.toLowerCase()
-      });
-
-      loadedCount++;
-
-      if (loadedCount === files.length) {
-        docsLoaded = true;
-        document.getElementById("status").textContent = files.length + " documents ready";
-      }
-    };
-
-    reader.readAsText(file);
-  }
-});
 
 function extractRelevant(topic) {
   let results = [];
