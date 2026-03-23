@@ -39,19 +39,19 @@ function updateAuthUI(user) {
   const adminPanel = byId("adminPanel");
 
   if (user) {
-    authBox.style.display = "none";
-    generatorArea.style.display = "block";
-    adminPanel.style.display = isAdmin(user) ? "block" : "none";
+    if (authBox) authBox.style.display = "none";
+    if (generatorArea) generatorArea.style.display = "block";
+    if (adminPanel) adminPanel.style.display = isAdmin(user) ? "block" : "none";
     setStatus("Ready");
   } else {
-    authBox.style.display = "block";
-    generatorArea.style.display = "none";
-    adminPanel.style.display = "none";
+    if (authBox) authBox.style.display = "block";
+    if (generatorArea) generatorArea.style.display = "none";
+    if (adminPanel) adminPanel.style.display = "none";
     setAuthStatus("Not logged in");
     setStatus("Ready");
     docs = [];
     docsLoaded = false;
-    byId("output").textContent = "";
+    if (byId("output")) byId("output").textContent = "";
   }
 }
 
@@ -88,7 +88,15 @@ async function signIn() {
 
   try {
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    setAuthStatus(error ? error.message : "Signed in");
+
+    if (error) {
+      setAuthStatus(error.message);
+      return;
+    }
+
+    const { data } = await supabaseClient.auth.getUser();
+    updateAuthUI(data.user || null);
+    setAuthStatus("Signed in");
   } catch (err) {
     console.error(err);
     setAuthStatus("Failed to fetch");
@@ -111,7 +119,6 @@ async function uploadDocuments() {
   }
 
   const files = byId("docs").files;
-
   if (!files.length) {
     setAdminStatus("Choose at least one file");
     return;
@@ -175,6 +182,8 @@ async function loadAdminFiles() {
   if (!currentUser || !isAdmin(currentUser)) return;
 
   const listEl = byId("adminFilesList");
+  if (!listEl) return;
+
   listEl.innerHTML = "Loading...";
 
   const { data, error } = await supabaseClient.storage
@@ -335,8 +344,8 @@ function initButtons() {
 
 async function initAuth() {
   try {
-    const { data } = await supabaseClient.auth.getSession();
-    const user = data.session?.user ?? null;
+    const { data } = await supabaseClient.auth.getUser();
+    const user = data.user || null;
     updateAuthUI(user);
 
     if (user) {
