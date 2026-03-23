@@ -1,65 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Drill Forge V8 FIXED</title>
-<link rel="stylesheet" href="styles.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drill Forge V8 FIXED</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-<div class="app">
+  <div class="app">
 
-<div class="auth-box">
-  <h2>Login</h2>
-  <input id="email" type="email" placeholder="Email" />
-  <input id="password" type="password" placeholder="Password" />
-  <button onclick="signUp()">Sign Up</button>
-  <button onclick="signIn()">Sign In</button>
-  <button onclick="signOutUser()">Sign Out</button>
-  <div id="authStatus">Not logged in</div>
-</div>
+    <div class="auth-box">
+      <h2>Login</h2>
+      <input id="email" type="email" placeholder="Email" />
+      <input id="password" type="password" placeholder="Password" />
+      <button onclick="signUp()">Sign Up</button>
+      <button onclick="signIn()">Sign In</button>
+      <button onclick="signOutUser()">Sign Out</button>
+      <div id="authStatus">Not logged in</div>
+    </div>
 
-<h1>Drill Forge</h1>
+    <div id="generatorArea" style="display:none;">
+      <h1>Drill Forge</h1>
 
-<select id="nfpa">
-<option>NFPA 1001</option>
-<option>NFPA 1006</option>
-<option>NFPA 1021</option>
-<option>NFPA 1041</option>
-</select>
+      <select id="nfpa">
+        <option>NFPA 1001</option>
+        <option>NFPA 1006</option>
+        <option>NFPA 1021</option>
+        <option>NFPA 1041</option>
+      </select>
 
-<select id="duration">
-<option>30 minutes</option>
-<option>60 minutes</option>
-<option>2 hours</option>
-<option>4 hours</option>
-</select>
+      <select id="duration">
+        <option>30 minutes</option>
+        <option>60 minutes</option>
+        <option>2 hours</option>
+        <option>4 hours</option>
+      </select>
 
-<select id="type">
-<option>Lesson Plan</option>
-<option>Skill Sheet</option>
-</select>
+      <select id="type">
+        <option>Lesson Plan</option>
+        <option>Skill Sheet</option>
+      </select>
 
-<select id="format">
-<option>Simple</option>
-<option>Detailed</option>
-</select>
+      <select id="format">
+        <option>Simple</option>
+        <option>Detailed</option>
+      </select>
 
-<input id="topic" placeholder="Enter topic">
+      <input id="topic" placeholder="Enter topic">
 
-<input type="file" id="docs" multiple>
+      <input type="file" id="docs" multiple>
 
-<div id="status">No documents loaded</div>
+      <div id="status">No documents loaded</div>
 
-<button onclick="generate()">Generate</button>
-<button onclick="exportPDF()">Export PDF</button>
+      <button onclick="generate()">Generate</button>
+      <button onclick="exportPDF()">Export PDF</button>
 
-<pre id="output"></pre>
+      <pre id="output"></pre>
+    </div>
 
-</div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
 </body>
 </html>

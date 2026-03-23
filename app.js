@@ -1,71 +1,148 @@
-let docs=[];
-let docsLoaded=false;
+const SUPABASE_URL = "https://ziaaklihkikgpzttppto.supabase.co";
+const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
 
-document.getElementById("docs").addEventListener("change", function(e){
-docs=[];
-docsLoaded=false;
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let files = e.target.files;
-let loadedCount = 0;
+let docs = [];
+let docsLoaded = false;
 
-if(files.length===0){
-document.getElementById("status").textContent="No documents loaded";
-return;
+function updateAuthUI(user) {
+  const generatorArea = document.getElementById("generatorArea");
+  const authStatus = document.getElementById("authStatus");
+
+  if (user) {
+    generatorArea.style.display = "block";
+    authStatus.textContent = `Signed in as ${user.email}`;
+  } else {
+    generatorArea.style.display = "none";
+    authStatus.textContent = "Not logged in";
+  }
 }
 
-for(let file of files){
-let reader=new FileReader();
-
-reader.onload=function(evt){
-docs.push({
-name:file.name,
-content:evt.target.result.toLowerCase()
+supabase.auth.getUser().then(({ data, error }) => {
+  if (error) {
+    console.error(error);
+    updateAuthUI(null);
+    return;
+  }
+  updateAuthUI(data.user);
 });
 
-loadedCount++;
-
-if(loadedCount===files.length){
-docsLoaded=true;
-document.getElementById("status").textContent=files.length + " documents ready";
-}
-};
-
-reader.readAsText(file);
-}
+supabase.auth.onAuthStateChange((event, session) => {
+  updateAuthUI(session?.user ?? null);
 });
 
-function extractRelevant(topic){
-let results=[];
-let t = topic.toLowerCase();
+async function signUp() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
 
-for(let d of docs){
-if(d.content.includes(t)){
-results.push(d.name);
-}
-}
-return results;
-}
+  if (!email || !password) {
+    document.getElementById("authStatus").textContent = "Enter email and password";
+    return;
+  }
 
-function generate(){
-let nfpa=document.getElementById("nfpa").value;
-let dur=document.getElementById("duration").value;
-let type=document.getElementById("type").value;
-let format=document.getElementById("format").value;
-let topic=document.getElementById("topic").value;
+  const { error } = await supabase.auth.signUp({
+    email,
+    password
+  });
 
-if(!topic){
-document.getElementById("output").textContent="Enter a topic.";
-return;
+  document.getElementById("authStatus").textContent =
+    error ? error.message : "Signup successful. Check your email if confirmation is enabled.";
 }
 
-let refs = docsLoaded ? extractRelevant(topic) : [];
+async function signIn() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
 
-let refText = refs.length ? refs.join("\n") : "No matching documents";
+  if (!email || !password) {
+    document.getElementById("authStatus").textContent = "Enter email and password";
+    return;
+  }
 
-let output="";
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
 
-if(type==="Lesson Plan"){
-output = `BFES LESSON PLAN
+  if (error) {
+    document.getElementById("authStatus").textContent = error.message;
+  }
+}
+
+async function signOutUser() {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    document.getElementById("authStatus").textContent = error.message;
+  } else {
+    document.getElementById("authStatus").textContent = "Signed out";
+  }
+}
+
+document.getElementById("docs").addEventListener("change", function (e) {
+  docs = [];
+  docsLoaded = false;
+
+  let files = e.target.files;
+  let loadedCount = 0;
+
+  if (files.length === 0) {
+    document.getElementById("status").textContent = "No documents loaded";
+    return;
+  }
+
+  for (let file of files) {
+    let reader = new FileReader();
+
+    reader.onload = function (evt) {
+      docs.push({
+        name: file.name,
+        content: evt.target.result.toLowerCase()
+      });
+
+      loadedCount++;
+
+      if (loadedCount === files.length) {
+        docsLoaded = true;
+        document.getElementById("status").textContent = files.length + " documents ready";
+      }
+    };
+
+    reader.readAsText(file);
+  }
+});
+
+function extractRelevant(topic) {
+  let results = [];
+  let t = topic.toLowerCase();
+
+  for (let d of docs) {
+    if (d.content.includes(t)) {
+      results.push(d.name);
+    }
+  }
+  return results;
+}
+
+function generate() {
+  let nfpa = document.getElementById("nfpa").value;
+  let dur = document.getElementById("duration").value;
+  let type = document.getElementById("type").value;
+  let format = document.getElementById("format").value;
+  let topic = document.getElementById("topic").value.trim();
+
+  if (!topic) {
+    document.getElementById("output").textContent = "Enter a topic.";
+    return;
+  }
+
+  let refs = docsLoaded ? extractRelevant(topic) : [];
+  let refText = refs.length ? refs.join("\n") : "No matching documents";
+
+  let output = "";
+
+  if (type === "Lesson Plan") {
+    output = `BFES LESSON PLAN
 
 SUBJECT: ${topic}
 NFPA: ${nfpa}
@@ -76,7 +153,7 @@ LEARNING OUTCOMES:
 - Demonstrate competency per ${nfpa}
 
 LESSON OUTLINE:
-${format==="Detailed" ? "- Theory\n- Demonstration\n- Practical\n- Evaluation" : "- Overview\n- Practical\n- Review"}
+${format === "Detailed" ? "- Theory\n- Demonstration\n- Practical\n- Evaluation" : "- Overview\n- Practical\n- Review"}
 
 APPLICATION:
 Scenario-based evaluation
@@ -88,8 +165,8 @@ ${refText}
 2. NFPA:
 ${nfpa}
 `;
-}else{
-output = `BFES SKILL SHEET
+  } else {
+    output = `BFES SKILL SHEET
 
 TITLE: ${topic}
 STANDARD: ${nfpa}
@@ -106,22 +183,22 @@ ${refText}
 2. NFPA:
 ${nfpa}
 `;
+  }
+
+  document.getElementById("output").textContent = output;
 }
 
-document.getElementById("output").textContent=output;
-}
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  let doc = new jsPDF();
+  let text = document.getElementById("output").textContent;
 
-function exportPDF(){
-const { jsPDF } = window.jspdf;
-let doc=new jsPDF();
-let text=document.getElementById("output").textContent;
+  if (!text) {
+    alert("Generate content first");
+    return;
+  }
 
-if(!text){
-alert("Generate content first");
-return;
-}
-
-let lines=doc.splitTextToSize(text,180);
-doc.text(lines,10,10);
-doc.save("DrillForge.pdf");
+  let lines = doc.splitTextToSize(text, 180);
+  doc.text(lines, 10, 10);
+  doc.save("DrillForge.pdf");
 }
