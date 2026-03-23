@@ -276,144 +276,269 @@ function extractRelevant(topic) {
   return [...new Set(results)];
 }
 
-function buildTopicProfile(topic, nfpa, format) {
+function includeFlags() {
+  return {
+    jpr: byId("includeJpr").checked,
+    safety: byId("includeSafety").checked,
+    notes: byId("includeNotes").checked,
+    eval: byId("includeEval").checked,
+    assignment: byId("includeAssignment").checked,
+    references: byId("includeReferences").checked
+  };
+}
+
+function durationBlocks(duration) {
+  const map = {
+    "30 minutes": ["Introduction", "Core topic points", "Short application", "Review"],
+    "60 minutes": ["Introduction", "Topic instruction", "Demonstration", "Evaluation"],
+    "2 hours": ["Introduction", "Topic instruction", "Demonstration", "Practical activity", "Debrief"],
+    "4 hours": ["Introduction", "Instruction", "Demonstration", "Practical evolutions", "Debrief and evaluation"],
+    "8 hours": ["Introduction", "Extended instruction", "Demonstration", "Multiple practical evolutions", "Debrief, evaluation, remediation"]
+  };
+  return map[duration] || map["60 minutes"];
+}
+
+function topicType(topic, nfpa, audienceType) {
   const t = topic.toLowerCase();
 
-  const base = {
-    learningOutcomes: [
-      `The learner will be able to explain the operational purpose of ${topic}.`,
-      `The learner will be able to identify hazards, controls, and expected performance related to ${topic}.`,
-      `The learner will be able to demonstrate or describe topic-specific performance consistent with ${nfpa}.`
-    ],
-    jprs: [
-      `${nfpa} topic-aligned job performance requirements related to ${topic}.`,
-      `Applicable knowledge, skills, safety controls, and performance outcomes relevant to ${topic}.`
-    ],
-    teachingAids: [
-      "Computer and projector",
-      "Applicable PPE and operational equipment",
-      "Department reference documents where available"
-    ],
-    intro: [
-      `This lesson is designed to address ${topic} in alignment with ${nfpa}.`,
-      `The learner will review relevant hazards, expected performance, and operational considerations before application or testing.`
-    ],
-    outline: [
-      `Review topic fundamentals for ${topic}.`,
-      `Identify hazards, controls, and role assignments.`,
-      `Demonstrate the expected sequence or operational method.`,
-      `Complete practical application or guided review.`,
-      `Debrief performance, common errors, and safety considerations.`
-    ],
-    application: [
-      `The learner will be evaluated through instructor observation, questioning, and practical application related to ${topic}.`
-    ],
-    notes: [
-      "Use uploaded department reference documents where applicable.",
-      "Adjust level of detail to the learner group, equipment, and local procedures."
-    ],
-    skillSteps: [
-      `Identify the equipment and safety requirements for ${topic}.`,
-      `Complete the topic-specific setup or preparatory steps.`,
-      `Perform ${topic} using the correct sequence and safe work practices.`,
-      `Communicate effectively and maintain scene or operational safety.`,
-      `Complete the task to instructor standard.`
-    ]
-  };
+  if (t.includes("confined")) return "confined-space";
+  if (t.includes("rope")) return "rope";
+  if (t.includes("swift") || t.includes("water") || t.includes("ice")) return "water";
+  if (t.includes("standpipe") || t.includes("hose") || t.includes("ladder") || t.includes("fire attack") || t.includes("forcible")) return "fireground";
+  if (t.includes("leadership") || t.includes("officer") || nfpa === "NFPA 1021" || audienceType === "Officer") return "officer";
+  if (nfpa === "NFPA 1041" || audienceType === "Instructor") return "instruction";
+  return "general";
+}
 
-  if (t.includes("confined")) {
-    base.learningOutcomes = [
-      "The learner will be able to identify confined space hazards and atmospheric concerns.",
-      "The learner will be able to select PPE, monitoring, and support equipment for confined space operations.",
-      "The learner will be able to apply safe entry, support, or rescue-related actions consistent with the selected standard."
-    ];
-    base.outline = [
-      "Review confined space definitions, hazards, and control measures.",
-      "Review atmospheric monitoring, ventilation, and communications.",
-      "Review team roles, entry control, and emergency procedures.",
-      "Complete practical setup and task-specific application.",
-      "Debrief hazards, findings, and performance."
-    ];
-  }
+function detailedProcedureSteps(topic, type, deliveryStyle, depth, audienceType, nfpa) {
+  const kind = topicType(topic, nfpa, audienceType);
 
-  if (t.includes("rope")) {
-    base.learningOutcomes = [
-      "The learner will be able to identify rope rescue hazards and system safety considerations.",
-      "The learner will be able to describe or demonstrate appropriate rope rescue equipment use.",
-      "The learner will be able to apply safe rope rescue practices related to the selected topic."
-    ];
-    base.outline = [
-      "Review rope rescue hazards, equipment, and safety checks.",
-      "Review anchor, system, and team considerations.",
-      "Demonstrate the selected rope rescue skill or concept.",
-      "Complete practical application and corrective coaching.",
-      "Debrief system efficiency, communication, and safety."
-    ];
-  }
+  let steps = [
+    `Review the purpose, scope, and expected outcome for ${topic}.`,
+    "Confirm instructor assignments, learner grouping, and available resources.",
+    "Complete a safety briefing before any demonstration or practical activity begins.",
+    "Confirm all equipment, PPE, props, and reference material are ready for use."
+  ];
 
-  if (t.includes("swift") || t.includes("water") || t.includes("ice")) {
-    base.learningOutcomes = [
-      "The learner will be able to assess water-related hazards and environmental conditions.",
-      "The learner will be able to identify PPE, rescue tools, and safety considerations for the selected topic.",
-      "The learner will be able to apply safe movement, support, or rescue practices appropriate to the selected standard."
-    ];
-    base.outline = [
-      "Review water or ice conditions, hazards, and survivability factors.",
-      "Review PPE, rescue options, and team roles.",
-      "Demonstrate the selected shore-based, support, or practical skill.",
-      "Complete practical evolutions and instructor feedback.",
-      "Debrief tactics, safety controls, and performance."
-    ];
-  }
-
-  if (t.includes("standpipe") || t.includes("hose") || t.includes("fire attack")) {
-    base.learningOutcomes = [
-      "The learner will be able to identify equipment and operational considerations for the selected fireground topic.",
-      "The learner will be able to describe or demonstrate the correct setup and deployment sequence.",
-      "The learner will be able to apply safe and effective operational performance consistent with the selected standard."
-    ];
-    base.outline = [
-      "Review equipment, purpose, and deployment sequence.",
-      "Review hazards, communications, and role assignments.",
-      "Demonstrate the selected fireground skill or procedure.",
-      "Complete practical application and performance feedback.",
-      "Debrief key operational points and safety considerations."
-    ];
-  }
-
-  if (t.includes("leadership") || t.includes("officer") || nfpa === "NFPA 1021") {
-    base.learningOutcomes = [
-      "The learner will be able to describe leadership and supervisory expectations related to the selected topic.",
-      "The learner will be able to apply communication, decision-making, and accountability principles.",
-      "The learner will be able to demonstrate understanding consistent with company officer responsibilities."
-    ];
-    base.outline = [
-      "Review the purpose and relevance of the selected officer topic.",
-      "Discuss decision-making, communication, and accountability expectations.",
-      "Work through guided application or scenario-based discussion.",
-      "Review common errors, corrective actions, and supervisory considerations.",
-      "Debrief takeaways and practical application."
-    ];
-  }
-
-  if (format === "Detailed") {
-    base.notes.push("Detailed format selected: include deeper instructor guidance, expanded discussion points, and practical emphasis.");
+  if (kind === "confined-space") {
+    steps = steps.concat([
+      "Identify the confined space hazards, potential atmospheric issues, and required control measures.",
+      "Confirm monitoring equipment is functioning and demonstrate the required atmospheric testing sequence.",
+      "Review communications, entry control, attendant responsibilities, and emergency procedures.",
+      "Demonstrate the setup of retrieval, ventilation, monitoring, and access equipment as applicable.",
+      "Walk learners through the sequence for safe entry, support, or rescue-related tasks.",
+      "Have learners repeat the sequence step by step with instructor coaching and correction.",
+      "Evaluate whether learners maintained control measures, communications, and scene safety throughout."
+    ]);
+  } else if (kind === "rope") {
+    steps = steps.concat([
+      "Identify hazards, edge issues, anchor considerations, and system safety concerns.",
+      "Demonstrate equipment selection, pre-use checks, and assignment of team roles.",
+      "Demonstrate the setup sequence for the selected rope system or procedure.",
+      "Explain why each step occurs in that order and what could fail if done incorrectly.",
+      "Have learners repeat the setup and operational sequence under instructor supervision.",
+      "Stop at each critical checkpoint to verify anchors, connections, commands, and safety checks.",
+      "Evaluate communication, teamwork, safety discipline, and operational control."
+    ]);
+  } else if (kind === "water") {
+    steps = steps.concat([
+      "Assess environmental conditions, hazards, flow, access, and survivability factors.",
+      "Review PPE requirements, rescue options, team roles, and downstream/upstream safety considerations.",
+      "Demonstrate the selected shore-based, support, or practical skill in the correct sequence.",
+      "Explain where rescuers should position themselves and how hazards are managed throughout.",
+      "Run learners through the skill repeatedly, correcting body position, communication, and technique.",
+      "Emphasize scene control, rapid intervention considerations, and post-task debriefing."
+    ]);
+  } else if (kind === "fireground") {
+    steps = steps.concat([
+      "Identify the equipment and tactical purpose of the selected fireground task.",
+      "Demonstrate setup, deployment, communications, and positioning in the correct order.",
+      "Explain the operational reason for each step and the consequences of skipped steps.",
+      "Have learners perform the full sequence under timed or coached conditions as appropriate.",
+      "Reinforce safe body mechanics, accountability, PPE use, and coordination with team members.",
+      "Evaluate both technical performance and safety compliance."
+    ]);
+  } else if (kind === "officer") {
+    steps = steps.concat([
+      "Explain the leadership or supervisory relevance of the selected topic.",
+      "Walk through the decision-making process, communications, and accountability expectations.",
+      "Use scenario prompts or guided discussion to apply the topic in realistic officer situations.",
+      "Pause throughout to discuss risk control, priorities, and expected supervisory actions.",
+      "Have learners explain what they would do, why they would do it, and how they would communicate it.",
+      "Evaluate clarity of reasoning, communication, and consistency with officer-level expectations."
+    ]);
+  } else if (kind === "instruction") {
+    steps = steps.concat([
+      "Explain the instructional purpose, learning objective, and expected learner performance.",
+      "Demonstrate how to organize the topic, present the material, and maintain control of the learning environment.",
+      "Review safety oversight, learner engagement, evaluation methods, and corrective coaching.",
+      "Have learners practice delivery, explanation, or evaluation tasks as appropriate.",
+      "Debrief strengths, gaps, and recommended instructional improvements."
+    ]);
   } else {
-    base.notes.push("Simple format selected: keep delivery concise and focused on core performance and safety points.");
+    steps = steps.concat([
+      "Review the topic-specific hazards, sequence, and expected performance.",
+      "Demonstrate the correct operational method in a clear step-by-step sequence.",
+      "Have learners repeat the task with instructor oversight and correction.",
+      "Evaluate completion, safety, and consistency with the selected standard."
+    ]);
+  }
+
+  if (deliveryStyle === "Classroom") {
+    steps.push("Keep the evolution discussion-based where needed, using visuals, examples, and guided questioning.");
+  }
+
+  if (deliveryStyle === "Practical") {
+    steps.push("Allocate additional time to hands-on repetition, coaching, and observed performance.");
+  }
+
+  if (depth === "Detailed" || depth === "Very Detailed") {
+    steps.push("Pause after each major stage to review why the step matters and what errors commonly occur there.");
+  }
+
+  if (depth === "Very Detailed") {
+    steps.push("Document specific coaching points, corrective actions, and remediation expectations before final evaluation.");
+  }
+
+  return steps;
+}
+
+function commonErrors(topic, nfpa, audienceType) {
+  const kind = topicType(topic, nfpa, audienceType);
+
+  const base = [
+    "Skipping safety checks or rushing the setup sequence.",
+    "Poor communication between team members or instructors and learners.",
+    "Incorrect sequencing of critical steps.",
+    "Failure to reassess hazards after the task begins."
+  ];
+
+  if (kind === "confined-space") {
+    return base.concat([
+      "Incomplete atmospheric monitoring or failure to communicate readings.",
+      "Weak attendant control or unclear emergency procedures.",
+      "Inadequate control of access, retrieval, or ventilation setup."
+    ]);
+  }
+
+  if (kind === "rope") {
+    return base.concat([
+      "Missed system safety checks or incomplete connection verification.",
+      "Poor anchor selection or lack of edge control.",
+      "Weak command discipline during system movement."
+    ]);
+  }
+
+  if (kind === "water") {
+    return base.concat([
+      "Poor positioning relative to hazards, current, or rescue path.",
+      "Failure to maintain downstream or upstream safety awareness.",
+      "Weak communication in noisy or dynamic environments."
+    ]);
+  }
+
+  if (kind === "fireground") {
+    return base.concat([
+      "Improper equipment setup or poor deployment order.",
+      "Unsafe body position or weak crew coordination.",
+      "Task focus without adequate accountability or scene awareness."
+    ]);
+  }
+
+  if (kind === "officer") {
+    return base.concat([
+      "Unclear priorities or weak supervisory communication.",
+      "Failure to justify decisions or control the incident/problem.",
+      "Inadequate accountability, follow-up, or documentation."
+    ]);
+  }
+
+  if (kind === "instruction") {
+    return base.concat([
+      "Weak learner engagement or poor pacing.",
+      "Failing to correct unsafe learner actions immediately.",
+      "Inadequate evaluation of learner performance."
+    ]);
   }
 
   return base;
 }
 
-function buildLessonPlanOutput(topic, nfpa, duration, format, instructor, location, refs) {
-  const p = buildTopicProfile(topic, nfpa, format);
+function correctiveActions(topic, nfpa, audienceType) {
+  const kind = topicType(topic, nfpa, audienceType);
+
+  const base = [
+    "Stop the evolution at the point of error and restate the expected sequence.",
+    "Have the learner repeat the step correctly before moving on.",
+    "Use instructor demonstration to reinforce the correct method.",
+    "Confirm the learner can explain why the corrected step matters."
+  ];
+
+  if (kind === "confined-space") {
+    return base.concat([
+      "Re-run monitoring, communications, and attendant responsibilities until consistent.",
+      "Repeat emergency procedure review before allowing progression."
+    ]);
+  }
+
+  if (kind === "rope") {
+    return base.concat([
+      "Require a full system safety check before restarting the evolution.",
+      "Repeat anchor, edge, and command portions until consistent."
+    ]);
+  }
+
+  if (kind === "water") {
+    return base.concat([
+      "Reposition personnel and repeat communication/control steps.",
+      "Repeat movement or rescue tasks with slower coached progression."
+    ]);
+  }
+
+  return base;
+}
+
+function evaluationSequence(topic, nfpa, audienceType) {
+  return [
+    `Confirm the learner can explain the purpose and safety considerations of ${topic}.`,
+    "Observe whether the learner follows the correct sequence without skipping critical steps.",
+    "Evaluate equipment use, communications, and hazard control throughout the evolution.",
+    "Record whether performance met standard, required coaching, or required remediation.",
+    "Debrief the learner on strengths, errors, and next improvement targets."
+  ];
+}
+
+function assignmentItems(topic, nfpa, depth) {
+  const items = [
+    `Review the relevant points for ${topic} and summarize the key operational takeaways.`,
+    `Identify how ${nfpa} applies to the selected topic in local operations or training.`
+  ];
+
+  if (depth === "Detailed" || depth === "Very Detailed") {
+    items.push("Complete a written or verbal debrief identifying common errors, corrections, and safety controls.");
+  }
+
+  return items;
+}
+
+function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, refs) {
+  const flags = includeFlags();
   const instructorText = instructor || (currentUser?.email || "TBD");
   const locationText = location || "TBD";
   const levelInstruction = format === "Detailed" ? "No aid from instructor" : "Aid from instructor";
-  const environment = format === "Detailed" ? "Simulated / Controlled" : "Controlled";
+  const environment = deliveryStyle === "Classroom"
+    ? "Classroom / Controlled"
+    : deliveryStyle === "Practical"
+      ? "Simulated / Controlled"
+      : "Mixed / Controlled";
+
+  const procedureSteps = detailedProcedureSteps(topic, "Lesson Plan", deliveryStyle, depth, audienceType, nfpa);
+  const errors = commonErrors(topic, nfpa, audienceType);
+  const corrections = correctiveActions(topic, nfpa, audienceType);
+  const evalSteps = evaluationSequence(topic, nfpa, audienceType);
   const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
 
-  return `BRAMPTON FIRE & EMERGENCY SERVICES LESSON PLAN
+  let output = `BRAMPTON FIRE & EMERGENCY SERVICES LESSON PLAN
 
 DATE: ${todayString()}
 INSTRUCTOR: ${instructorText}
@@ -422,55 +547,154 @@ Location: ${locationText}
 TOTAL TIME: ${duration}
 
 LEARNING OUTCOME(S):
-${p.learningOutcomes.map(x => `- ${x}`).join("\n")}
+- The learner will be able to explain the purpose, hazards, and expected performance related to ${topic}.
+- The learner will be able to complete the required sequence, controls, or practical actions for ${topic} consistent with ${nfpa}.
+- The learner will be able to demonstrate safe, organized, and effective performance appropriate to the selected audience and delivery style.
 
 ESTIMATED TIME:
-${duration}
+${durationBlocks(duration).map(x => `- ${x}`).join("\n")}
 
 Level of Instruction:
 ${levelInstruction}
 
+Guidance:
+${depth}
+
 Environment:
 ${environment}
+`;
 
+  if (flags.jpr) {
+    output += `
 JPR(s):
-${p.jprs.map(x => `- ${x}`).join("\n")}
+- ${nfpa} job performance requirements relevant to ${topic}.
+- Applicable knowledge, skills, safety controls, and performance expectations tied to the selected topic.
+`;
+  }
 
+  output += `
 Teaching Aids:
-${p.teachingAids.map(x => `- ${x}`).join("\n")}
+- Computer and projector
+- Whiteboard / markers
+- Topic-specific equipment and PPE
+- Training props, evolutions, or demo equipment as required
+- Uploaded department reference material where available
 
 INTRODUCTION:
-${p.intro.map(x => `- ${x}`).join("\n")}
+- Introduce ${topic} and explain why it matters operationally.
+- Review the expected performance standard, learner responsibilities, and safety expectations.
+- Explain how the lesson will progress from instruction to demonstration to evaluation.
+- Identify what the learner must do correctly in order to meet the standard.
 
 LESSON OUTLINE:
-${p.outline.map(x => `- ${x}`).join("\n")}
+${procedureSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+`;
 
+  if (flags.safety) {
+    output += `
+SAFETY CONSIDERATIONS:
+- Conduct a safety briefing before beginning any demonstration or practical activity.
+- Confirm PPE, equipment readiness, control zones, communications, and stop-work authority.
+- Reassess hazards continuously as the lesson progresses.
+- Stop the evolution immediately if unsafe conditions, unsafe acts, or loss of control occur.
+`;
+  }
+
+  if (depth === "Detailed" || depth === "Very Detailed") {
+    output += `
+COMMON ERRORS TO WATCH FOR:
+${errors.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+
+CORRECTIVE ACTIONS:
+${corrections.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+`;
+  }
+
+  if (flags.eval) {
+    output += `
 APPLICATION & TEST:
-${p.application.map(x => `- ${x}`).join("\n")}
+${evalSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+`;
+  }
 
+  if (flags.notes) {
+    output += `
 NOTES:
-${p.notes.map(x => `- ${x}`).join("\n")}
+- Match the pace of the lesson to learner experience, available equipment, and training environment.
+- Keep the instruction focused on the selected topic and avoid drifting into unrelated material.
+- Reinforce why each step is completed in that order and what risk is created when steps are skipped.
+- Use coaching pauses throughout the lesson to correct errors before evaluation.
+`;
+  }
 
+  if (flags.assignment) {
+    output += `
+ASSIGNMENT:
+${assignmentItems(topic, nfpa, depth).map(x => `- ${x}`).join("\n")}
+`;
+  }
+
+  if (flags.references) {
+    output += `
 REFERENCES:
 ${referencesText}
-- ${nfpa}`;
+- ${nfpa}
+`;
+  }
+
+  return output.trim();
 }
 
-function buildSkillSheetOutput(topic, nfpa, format, refs) {
-  const p = buildTopicProfile(topic, nfpa, format);
+function buildSkillSheetOutput(topic, nfpa, format, depth, deliveryStyle, audienceType, refs) {
+  const flags = includeFlags();
+  const steps = detailedProcedureSteps(topic, "Skill Sheet", deliveryStyle, depth, audienceType, nfpa);
+  const errors = commonErrors(topic, nfpa, audienceType);
+  const evalSteps = evaluationSequence(topic, nfpa, audienceType);
   const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
 
-  return `BFES JOB PERFORMANCE REQUIREMENT SKILL SHEET
+  let output = `BFES JOB PERFORMANCE REQUIREMENT SKILL SHEET
 
 Standard: ${nfpa}
 Title: ${topic}
+`;
 
+  if (flags.jpr) {
+    output += `
 JPR:
-${p.jprs.map(x => `- ${x}`).join("\n")}
+- ${nfpa} job performance requirements relevant to ${topic}.
+- Applicable knowledge, skills, safety controls, and performance expectations tied to the selected topic.
+`;
+  }
 
+  output += `
 Skill Performance:
-${p.skillSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+${steps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+`;
 
+  if (flags.safety) {
+    output += `
+Safety Considerations:
+- Confirm PPE, equipment readiness, control zones, communications, and stop-work authority.
+- Reassess hazards continuously during the evolution.
+- Stop performance immediately if an unsafe act or unsafe condition is identified.
+`;
+  }
+
+  if (depth === "Detailed" || depth === "Very Detailed") {
+    output += `
+Common Errors:
+${errors.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+`;
+  }
+
+  if (flags.eval) {
+    output += `
+Evaluation Criteria:
+${evalSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+`;
+  }
+
+  output += `
 Candidate Name:
 Date:
 Candidate Signature:
@@ -482,10 +706,25 @@ Pass / Fail
 
 2nd Attempt:
 Pass / Fail / N/A
+`;
 
+  if (flags.notes) {
+    output += `
+Instructor Notes:
+- Evaluate performance against sequence, safety, communication, and overall control.
+- Require the learner to repeat incorrect steps correctly before marking performance complete.
+`;
+  }
+
+  if (flags.references) {
+    output += `
 REFERENCES:
 ${referencesText}
-- ${nfpa}`;
+- ${nfpa}
+`;
+  }
+
+  return output.trim();
 }
 
 function generate() {
@@ -493,6 +732,9 @@ function generate() {
   const duration = byId("duration").value;
   const type = byId("type").value;
   const format = byId("format").value;
+  const depth = byId("outputDepth").value;
+  const deliveryStyle = byId("deliveryStyle").value;
+  const audienceType = byId("audienceType").value;
   const topic = byId("topic").value.trim();
   const instructor = byId("instructorName").value.trim();
   const location = byId("locationName").value.trim();
@@ -506,9 +748,13 @@ function generate() {
 
   let output = "";
   if (type === "Lesson Plan") {
-    output = buildLessonPlanOutput(topic, nfpa, duration, format, instructor, location, refs);
+    output = buildLessonPlanOutput(
+      topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, refs
+    );
   } else {
-    output = buildSkillSheetOutput(topic, nfpa, format, refs);
+    output = buildSkillSheetOutput(
+      topic, nfpa, format, depth, deliveryStyle, audienceType, refs
+    );
   }
 
   byId("output").textContent = output;
