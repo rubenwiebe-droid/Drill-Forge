@@ -16,17 +16,19 @@ function setAuthStatus(message) {
 }
 
 function updateAuthUI(user) {
-  const generatorArea = byId("generatorArea");
+  const generatorArea = document.querySelector(".app");
+  const authBox = document.querySelector(".auth-box");
 
   if (user) {
     if (generatorArea) generatorArea.style.display = "block";
+    if (authBox) authBox.style.display = "none";
     setAuthStatus(`Signed in as ${user.email}`);
   } else {
     if (generatorArea) generatorArea.style.display = "none";
+    if (authBox) authBox.style.display = "block";
     setAuthStatus("Not logged in");
   }
 }
-
 async function signUp() {
   setAuthStatus("Trying sign up...");
 
