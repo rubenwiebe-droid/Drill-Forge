@@ -51,15 +51,24 @@
 
       <input id="topic" placeholder="Enter topic">
 
-      <input type="file" id="docs" multiple>
-      <button id="uploadDocsBtn" type="button">Upload Documents</button>
-
-      <div id="status">No documents loaded</div>
-
       <button id="generateBtn" type="button">Generate</button>
       <button id="exportPdfBtn" type="button">Export PDF</button>
 
+      <div id="status">Ready</div>
+
       <pre id="output"></pre>
+    </div>
+
+    <div id="adminPanel" class="admin-panel" style="display:none;">
+      <h2>Admin Panel</h2>
+
+      <input type="file" id="docs" multiple>
+      <button id="uploadDocsBtn" type="button">Upload Documents</button>
+
+      <div id="adminStatus">No admin action yet</div>
+
+      <h3>Uploaded Files</h3>
+      <div id="adminFilesList"></div>
     </div>
 
   </div>
