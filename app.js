@@ -31,6 +31,15 @@ function isAdmin(user) {
   return !!user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 }
 
+function todayString() {
+  const d = new Date();
+  return d.toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+}
+
 function updateAuthUI(user) {
   currentUser = user;
 
@@ -129,7 +138,7 @@ async function uploadDocuments() {
   let uploaded = 0;
 
   for (const file of files) {
-    const path = `${currentUser.id}/${Date.now()}-${file.name}`;
+    const path = `shared/${Date.now()}-${file.name}`;
 
     const { error } = await supabaseClient.storage
       .from("reference-docs")
@@ -151,11 +160,9 @@ async function uploadDocuments() {
 }
 
 async function loadStoredDocuments() {
-  if (!currentUser) return;
-
   const { data, error } = await supabaseClient.storage
     .from("reference-docs")
-    .list(currentUser.id, { limit: 100 });
+    .list("shared", { limit: 100 });
 
   if (error) {
     console.error(error);
@@ -188,7 +195,7 @@ async function loadAdminFiles() {
 
   const { data, error } = await supabaseClient.storage
     .from("reference-docs")
-    .list(currentUser.id, { limit: 100 });
+    .list("shared", { limit: 100 });
 
   if (error) {
     console.error(error);
@@ -231,7 +238,7 @@ async function deleteAdminFile(fileName) {
 
   setAdminStatus("Deleting...");
 
-  const path = `${currentUser.id}/${fileName}`;
+  const path = `shared/${fileName}`;
 
   const { error } = await supabaseClient.storage
     .from("reference-docs")
@@ -253,20 +260,242 @@ function extractRelevant(topic) {
   const t = topic.toLowerCase();
 
   for (const d of docs) {
-    if (d.content.includes(t) || d.name.toLowerCase().includes(t)) {
+    const n = d.name.toLowerCase();
+    if (n.includes(t)) {
+      results.push(d.name);
+      continue;
+    }
+
+    const words = t.split(" ").filter(Boolean);
+    const matchedWords = words.filter(w => n.includes(w));
+    if (matchedWords.length >= 1) {
       results.push(d.name);
     }
   }
 
-  return results;
+  return [...new Set(results)];
+}
+
+function buildTopicProfile(topic, nfpa, format) {
+  const t = topic.toLowerCase();
+
+  const base = {
+    learningOutcomes: [
+      `The learner will be able to explain the operational purpose of ${topic}.`,
+      `The learner will be able to identify hazards, controls, and expected performance related to ${topic}.`,
+      `The learner will be able to demonstrate or describe topic-specific performance consistent with ${nfpa}.`
+    ],
+    jprs: [
+      `${nfpa} topic-aligned job performance requirements related to ${topic}.`,
+      `Applicable knowledge, skills, safety controls, and performance outcomes relevant to ${topic}.`
+    ],
+    teachingAids: [
+      "Computer and projector",
+      "Applicable PPE and operational equipment",
+      "Department reference documents where available"
+    ],
+    intro: [
+      `This lesson is designed to address ${topic} in alignment with ${nfpa}.`,
+      `The learner will review relevant hazards, expected performance, and operational considerations before application or testing.`
+    ],
+    outline: [
+      `Review topic fundamentals for ${topic}.`,
+      `Identify hazards, controls, and role assignments.`,
+      `Demonstrate the expected sequence or operational method.`,
+      `Complete practical application or guided review.`,
+      `Debrief performance, common errors, and safety considerations.`
+    ],
+    application: [
+      `The learner will be evaluated through instructor observation, questioning, and practical application related to ${topic}.`
+    ],
+    notes: [
+      "Use uploaded department reference documents where applicable.",
+      "Adjust level of detail to the learner group, equipment, and local procedures."
+    ],
+    skillSteps: [
+      `Identify the equipment and safety requirements for ${topic}.`,
+      `Complete the topic-specific setup or preparatory steps.`,
+      `Perform ${topic} using the correct sequence and safe work practices.`,
+      `Communicate effectively and maintain scene or operational safety.`,
+      `Complete the task to instructor standard.`
+    ]
+  };
+
+  if (t.includes("confined")) {
+    base.learningOutcomes = [
+      "The learner will be able to identify confined space hazards and atmospheric concerns.",
+      "The learner will be able to select PPE, monitoring, and support equipment for confined space operations.",
+      "The learner will be able to apply safe entry, support, or rescue-related actions consistent with the selected standard."
+    ];
+    base.outline = [
+      "Review confined space definitions, hazards, and control measures.",
+      "Review atmospheric monitoring, ventilation, and communications.",
+      "Review team roles, entry control, and emergency procedures.",
+      "Complete practical setup and task-specific application.",
+      "Debrief hazards, findings, and performance."
+    ];
+  }
+
+  if (t.includes("rope")) {
+    base.learningOutcomes = [
+      "The learner will be able to identify rope rescue hazards and system safety considerations.",
+      "The learner will be able to describe or demonstrate appropriate rope rescue equipment use.",
+      "The learner will be able to apply safe rope rescue practices related to the selected topic."
+    ];
+    base.outline = [
+      "Review rope rescue hazards, equipment, and safety checks.",
+      "Review anchor, system, and team considerations.",
+      "Demonstrate the selected rope rescue skill or concept.",
+      "Complete practical application and corrective coaching.",
+      "Debrief system efficiency, communication, and safety."
+    ];
+  }
+
+  if (t.includes("swift") || t.includes("water") || t.includes("ice")) {
+    base.learningOutcomes = [
+      "The learner will be able to assess water-related hazards and environmental conditions.",
+      "The learner will be able to identify PPE, rescue tools, and safety considerations for the selected topic.",
+      "The learner will be able to apply safe movement, support, or rescue practices appropriate to the selected standard."
+    ];
+    base.outline = [
+      "Review water or ice conditions, hazards, and survivability factors.",
+      "Review PPE, rescue options, and team roles.",
+      "Demonstrate the selected shore-based, support, or practical skill.",
+      "Complete practical evolutions and instructor feedback.",
+      "Debrief tactics, safety controls, and performance."
+    ];
+  }
+
+  if (t.includes("standpipe") || t.includes("hose") || t.includes("fire attack")) {
+    base.learningOutcomes = [
+      "The learner will be able to identify equipment and operational considerations for the selected fireground topic.",
+      "The learner will be able to describe or demonstrate the correct setup and deployment sequence.",
+      "The learner will be able to apply safe and effective operational performance consistent with the selected standard."
+    ];
+    base.outline = [
+      "Review equipment, purpose, and deployment sequence.",
+      "Review hazards, communications, and role assignments.",
+      "Demonstrate the selected fireground skill or procedure.",
+      "Complete practical application and performance feedback.",
+      "Debrief key operational points and safety considerations."
+    ];
+  }
+
+  if (t.includes("leadership") || t.includes("officer") || nfpa === "NFPA 1021") {
+    base.learningOutcomes = [
+      "The learner will be able to describe leadership and supervisory expectations related to the selected topic.",
+      "The learner will be able to apply communication, decision-making, and accountability principles.",
+      "The learner will be able to demonstrate understanding consistent with company officer responsibilities."
+    ];
+    base.outline = [
+      "Review the purpose and relevance of the selected officer topic.",
+      "Discuss decision-making, communication, and accountability expectations.",
+      "Work through guided application or scenario-based discussion.",
+      "Review common errors, corrective actions, and supervisory considerations.",
+      "Debrief takeaways and practical application."
+    ];
+  }
+
+  if (format === "Detailed") {
+    base.notes.push("Detailed format selected: include deeper instructor guidance, expanded discussion points, and practical emphasis.");
+  } else {
+    base.notes.push("Simple format selected: keep delivery concise and focused on core performance and safety points.");
+  }
+
+  return base;
+}
+
+function buildLessonPlanOutput(topic, nfpa, duration, format, instructor, location, refs) {
+  const p = buildTopicProfile(topic, nfpa, format);
+  const instructorText = instructor || (currentUser?.email || "TBD");
+  const locationText = location || "TBD";
+  const levelInstruction = format === "Detailed" ? "No aid from instructor" : "Aid from instructor";
+  const environment = format === "Detailed" ? "Simulated / Controlled" : "Controlled";
+  const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
+
+  return `BRAMPTON FIRE & EMERGENCY SERVICES LESSON PLAN
+
+DATE: ${todayString()}
+INSTRUCTOR: ${instructorText}
+SUBJECT: ${topic}
+Location: ${locationText}
+TOTAL TIME: ${duration}
+
+LEARNING OUTCOME(S):
+${p.learningOutcomes.map(x => `- ${x}`).join("\n")}
+
+ESTIMATED TIME:
+${duration}
+
+Level of Instruction:
+${levelInstruction}
+
+Environment:
+${environment}
+
+JPR(s):
+${p.jprs.map(x => `- ${x}`).join("\n")}
+
+Teaching Aids:
+${p.teachingAids.map(x => `- ${x}`).join("\n")}
+
+INTRODUCTION:
+${p.intro.map(x => `- ${x}`).join("\n")}
+
+LESSON OUTLINE:
+${p.outline.map(x => `- ${x}`).join("\n")}
+
+APPLICATION & TEST:
+${p.application.map(x => `- ${x}`).join("\n")}
+
+NOTES:
+${p.notes.map(x => `- ${x}`).join("\n")}
+
+REFERENCES:
+${referencesText}
+- ${nfpa}`;
+}
+
+function buildSkillSheetOutput(topic, nfpa, format, refs) {
+  const p = buildTopicProfile(topic, nfpa, format);
+  const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
+
+  return `BFES JOB PERFORMANCE REQUIREMENT SKILL SHEET
+
+Standard: ${nfpa}
+Title: ${topic}
+
+JPR:
+${p.jprs.map(x => `- ${x}`).join("\n")}
+
+Skill Performance:
+${p.skillSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+
+Candidate Name:
+Date:
+Candidate Signature:
+
+Evaluator Name:
+
+1st Attempt:
+Pass / Fail
+
+2nd Attempt:
+Pass / Fail / N/A
+
+REFERENCES:
+${referencesText}
+- ${nfpa}`;
 }
 
 function generate() {
   const nfpa = byId("nfpa").value;
-  const dur = byId("duration").value;
+  const duration = byId("duration").value;
   const type = byId("type").value;
   const format = byId("format").value;
   const topic = byId("topic").value.trim();
+  const instructor = byId("instructorName").value.trim();
+  const location = byId("locationName").value.trim();
 
   if (!topic) {
     byId("output").textContent = "Enter a topic";
@@ -274,45 +503,12 @@ function generate() {
   }
 
   const refs = docsLoaded ? extractRelevant(topic) : [];
-  const refText = refs.length ? refs.join("\n") : "No matching documents";
 
   let output = "";
-
   if (type === "Lesson Plan") {
-    output = `BFES LESSON PLAN
-
-SUBJECT: ${topic}
-NFPA: ${nfpa}
-TIME: ${dur}
-
-OBJECTIVES:
-- Apply ${topic}
-- Meet ${nfpa}
-
-CONTENT:
-${format === "Detailed"
-? "- Theory\n- Demonstration\n- Practical\n- Evaluation\n- Safety Considerations"
-: "- Overview\n- Practical\n- Review"}
-
-REFERENCES:
-${refText}
-${nfpa}
-`;
+    output = buildLessonPlanOutput(topic, nfpa, duration, format, instructor, location, refs);
   } else {
-    output = `SKILL SHEET
-
-TITLE: ${topic}
-STANDARD: ${nfpa}
-
-STEPS:
-1. Prepare
-2. Execute ${topic}
-3. Safety check
-
-REFERENCES:
-${refText}
-${nfpa}
-`;
+    output = buildSkillSheetOutput(topic, nfpa, format, refs);
   }
 
   byId("output").textContent = output;
