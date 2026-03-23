@@ -1,66 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drill Forge V8 FIXED</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drill Forge</title>
+<link rel="stylesheet" href="styles.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
-  <div class="app">
 
-    <div class="auth-box">
-      <h2>Login</h2>
-      <input id="email" type="email" placeholder="Email" />
-      <input id="password" type="password" placeholder="Password" />
-      <button id="signUpBtn" type="button">Sign Up</button>
-      <button id="signInBtn" type="button">Sign In</button>
-      <button id="signOutBtn" type="button">Sign Out</button>
-      <div id="authStatus">Not logged in</div>
-    </div>
+<div class="app">
 
-    <div id="generatorArea" style="display:none;">
-      <h1>Drill Forge</h1>
+  <!-- LOGIN -->
+  <div class="auth-box">
+    <h2>Login</h2>
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+    <button onclick="signUp()">Sign Up</button>
+    <button onclick="signIn()">Sign In</button>
+    <button onclick="signOutUser()">Sign Out</button>
+    <div id="authStatus">Not logged in</div>
+  </div>
 
-      <select id="nfpa">
-        <option>NFPA 1001</option>
-        <option>NFPA 1006</option>
-        <option>NFPA 1021</option>
-        <option>NFPA 1041</option>
-      </select>
+  <!-- GENERATOR (HIDDEN UNTIL LOGIN) -->
+  <div id="generatorArea" style="display:none;">
 
-      <select id="duration">
-        <option>30 minutes</option>
-        <option>60 minutes</option>
-        <option>2 hours</option>
-        <option>4 hours</option>
-      </select>
+    <h1>Drill Forge</h1>
 
-      <select id="type">
-        <option>Lesson Plan</option>
-        <option>Skill Sheet</option>
-      </select>
+    <select id="nfpa">
+      <option>NFPA 1001</option>
+      <option>NFPA 1006</option>
+      <option>NFPA 1021</option>
+      <option>NFPA 1041</option>
+    </select>
 
-      <select id="format">
-        <option>Simple</option>
-        <option>Detailed</option>
-      </select>
+    <select id="duration">
+      <option>30 minutes</option>
+      <option>60 minutes</option>
+      <option>2 hours</option>
+      <option>4 hours</option>
+    </select>
 
-      <input id="topic" placeholder="Enter topic">
+    <select id="type">
+      <option>Lesson Plan</option>
+      <option>Skill Sheet</option>
+    </select>
 
-      <input type="file" id="docs" multiple>
+    <select id="format">
+      <option>Simple</option>
+      <option>Detailed</option>
+    </select>
 
-      <div id="status">No documents loaded</div>
+    <input id="topic" placeholder="Enter topic">
 
-      <button id="generateBtn" type="button">Generate</button>
-      <button id="exportPdfBtn" type="button">Export PDF</button>
+    <input type="file" id="docs" multiple>
 
-      <pre id="output"></pre>
-    </div>
+    <div id="status">No documents loaded</div>
+
+    <button onclick="generate()">Generate</button>
+    <button onclick="exportPDF()">Export PDF</button>
+
+    <pre id="output"></pre>
 
   </div>
 
-  <script src="app.js"></script>
+</div>
+
+<script src="app.js"></script>
+
 </body>
 </html>
