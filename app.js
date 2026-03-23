@@ -276,14 +276,19 @@ function extractRelevant(topic) {
   return [...new Set(results)];
 }
 
+function safeChecked(id) {
+  const el = byId(id);
+  return el ? el.checked : false;
+}
+
 function includeFlags() {
   return {
-    jpr: byId("includeJpr").checked,
-    safety: byId("includeSafety").checked,
-    notes: byId("includeNotes").checked,
-    eval: byId("includeEval").checked,
-    assignment: byId("includeAssignment").checked,
-    references: byId("includeReferences").checked
+    jpr: safeChecked("includeJpr"),
+    safety: safeChecked("includeSafety"),
+    notes: safeChecked("includeNotes"),
+    eval: safeChecked("includeEval"),
+    assignment: safeChecked("includeAssignment"),
+    references: safeChecked("includeReferences")
   };
 }
 
