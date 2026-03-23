@@ -728,34 +728,62 @@ ${referencesText}
 }
 
 function generate() {
-  const nfpa = byId("nfpa").value;
-  const duration = byId("duration").value;
-  const type = byId("type").value;
-  const format = byId("format").value;
-  const depth = byId("outputDepth").value;
-  const deliveryStyle = byId("deliveryStyle").value;
-  const audienceType = byId("audienceType").value;
-  const topic = byId("topic").value.trim();
-  const instructor = byId("instructorName").value.trim();
-  const location = byId("locationName").value.trim();
+  try {
+    const nfpa = byId("nfpa").value;
+    const duration = byId("duration").value;
+    const type = byId("type").value;
+    const format = byId("format").value;
+    const topic = byId("topic").value.trim();
+    const instructor = byId("instructorName") ? byId("instructorName").value.trim() : "";
+    const location = byId("locationName") ? byId("locationName").value.trim() : "";
 
-  if (!topic) {
-    byId("output").textContent = "Enter a topic";
-    return;
+    const outputDepthEl = byId("outputDepth");
+    const deliveryStyleEl = byId("deliveryStyle");
+    const audienceTypeEl = byId("audienceType");
+
+    const depth = outputDepthEl ? outputDepthEl.value : "Standard";
+    const deliveryStyle = deliveryStyleEl ? deliveryStyleEl.value : "Mixed";
+    const audienceType = audienceTypeEl ? audienceTypeEl.value : "Firefighter";
+
+    if (!topic) {
+      byId("output").textContent = "Enter a topic";
+      return;
+    }
+
+    const refs = docsLoaded ? extractRelevant(topic) : [];
+
+    let output = "";
+    if (type === "Lesson Plan") {
+      output = buildLessonPlanOutput(
+        topic,
+        nfpa,
+        duration,
+        format,
+        depth,
+        deliveryStyle,
+        audienceType,
+        instructor,
+        location,
+        refs
+      );
+    } else {
+      output = buildSkillSheetOutput(
+        topic,
+        nfpa,
+        format,
+        depth,
+        deliveryStyle,
+        audienceType,
+        refs
+      );
+    }
+
+    byId("output").textContent = output;
+  } catch (err) {
+    console.error(err);
+    byId("output").textContent = "Generate failed. Check console.";
   }
-
-  const refs = docsLoaded ? extractRelevant(topic) : [];
-
-  let output = "";
-  if (type === "Lesson Plan") {
-    output = buildLessonPlanOutput(
-      topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, refs
-    );
-  } else {
-    output = buildSkillSheetOutput(
-      topic, nfpa, format, depth, deliveryStyle, audienceType, refs
-    );
-  }
+}
 
   byId("output").textContent = output;
 }
