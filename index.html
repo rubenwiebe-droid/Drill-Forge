@@ -25,29 +25,39 @@
         <button id="signOutBtn" type="button">Sign Out</button>
       </div>
 
-      <select id="nfpa">
-        <option>NFPA 1001</option>
-        <option>NFPA 1006</option>
-        <option>NFPA 1021</option>
-        <option>NFPA 1041</option>
-      </select>
+      <div class="grid-two">
+        <input id="instructorName" placeholder="Instructor name">
+        <input id="locationName" placeholder="Location">
+      </div>
 
-      <select id="duration">
-        <option>30 minutes</option>
-        <option>60 minutes</option>
-        <option>2 hours</option>
-        <option>4 hours</option>
-      </select>
+      <div class="grid-two">
+        <select id="nfpa">
+          <option>NFPA 1001</option>
+          <option>NFPA 1006</option>
+          <option>NFPA 1021</option>
+          <option>NFPA 1041</option>
+        </select>
 
-      <select id="type">
-        <option>Lesson Plan</option>
-        <option>Skill Sheet</option>
-      </select>
+        <select id="duration">
+          <option>30 minutes</option>
+          <option>60 minutes</option>
+          <option>2 hours</option>
+          <option>4 hours</option>
+          <option>8 hours</option>
+        </select>
+      </div>
 
-      <select id="format">
-        <option>Simple</option>
-        <option>Detailed</option>
-      </select>
+      <div class="grid-two">
+        <select id="type">
+          <option>Lesson Plan</option>
+          <option>Skill Sheet</option>
+        </select>
+
+        <select id="format">
+          <option>Simple</option>
+          <option>Detailed</option>
+        </select>
+      </div>
 
       <input id="topic" placeholder="Enter topic">
 
@@ -63,6 +73,7 @@
       <input type="file" id="docs" multiple>
       <button id="uploadDocsBtn" type="button">Upload Documents</button>
       <div id="adminStatus">No admin action yet</div>
+
       <h3>Uploaded Files</h3>
       <div id="adminFilesList"></div>
     </div>
