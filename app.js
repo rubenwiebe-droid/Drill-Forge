@@ -1,10 +1,12 @@
 const SUPABASE_URL = "https://ziaaklihkikgpzttptpo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_wJgkFs35Ko9evNW4JPZL9w_JVq2WVcS";
+const ADMIN_EMAIL = "ruben.wiebe@hotmail.com";
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let docs = [];
 let docsLoaded = false;
+let currentUser = null;
 
 function byId(id) {
   return document.getElementById(id);
@@ -20,20 +22,36 @@ function setStatus(message) {
   if (el) el.textContent = message;
 }
 
+function setAdminStatus(message) {
+  const el = byId("adminStatus");
+  if (el) el.textContent = message;
+}
+
+function isAdmin(user) {
+  return !!user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+}
+
 function updateAuthUI(user) {
+  currentUser = user;
+
   const authBox = byId("authBox");
   const generatorArea = byId("generatorArea");
+  const adminPanel = byId("adminPanel");
 
   if (user) {
     authBox.style.display = "none";
     generatorArea.style.display = "block";
-    loadStoredDocuments();
+    adminPanel.style.display = isAdmin(user) ? "block" : "none";
+    setStatus("Ready");
   } else {
     authBox.style.display = "block";
     generatorArea.style.display = "none";
+    adminPanel.style.display = "none";
     setAuthStatus("Not logged in");
+    setStatus("Ready");
     docs = [];
     docsLoaded = false;
+    byId("output").textContent = "";
   }
 }
 
@@ -87,68 +105,61 @@ async function signOutUser() {
 }
 
 async function uploadDocuments() {
-  const files = byId("docs").files;
-  const { data: authData } = await supabaseClient.auth.getUser();
-  const user = authData.user;
-
-  if (!user) {
-    setStatus("You must be signed in.");
+  if (!currentUser || !isAdmin(currentUser)) {
+    setAdminStatus("Admin only");
     return;
   }
+
+  const files = byId("docs").files;
 
   if (!files.length) {
-    setStatus("Choose at least one file.");
+    setAdminStatus("Choose at least one file");
     return;
   }
 
-  setStatus("Uploading...");
+  setAdminStatus("Uploading...");
 
   let uploaded = 0;
 
   for (const file of files) {
-    const path = `${user.id}/${Date.now()}-${file.name}`;
+    const path = `${currentUser.id}/${Date.now()}-${file.name}`;
 
     const { error } = await supabaseClient.storage
       .from("reference-docs")
-      .upload(path, file, {
-        upsert: false
-      });
+      .upload(path, file, { upsert: false });
 
     if (error) {
       console.error(error);
-      setStatus(`Upload failed: ${error.message}`);
+      setAdminStatus(`Upload failed: ${error.message}`);
       return;
     }
 
     uploaded += 1;
   }
 
-  setStatus(`${uploaded} file(s) uploaded.`);
+  setAdminStatus(`${uploaded} file(s) uploaded`);
+  byId("docs").value = "";
   await loadStoredDocuments();
+  await loadAdminFiles();
 }
 
 async function loadStoredDocuments() {
-  const { data: authData } = await supabaseClient.auth.getUser();
-  const user = authData.user;
-
-  if (!user) return;
+  if (!currentUser) return;
 
   const { data, error } = await supabaseClient.storage
     .from("reference-docs")
-    .list(user.id, {
-      limit: 100
-    });
+    .list(currentUser.id, { limit: 100 });
 
   if (error) {
     console.error(error);
-    setStatus(`Could not load stored docs: ${error.message}`);
+    docs = [];
+    docsLoaded = false;
     return;
   }
 
   if (!data || !data.length) {
     docs = [];
     docsLoaded = false;
-    setStatus("No stored documents yet.");
     return;
   }
 
@@ -158,7 +169,74 @@ async function loadStoredDocuments() {
   }));
 
   docsLoaded = true;
-  setStatus(`${data.length} stored document(s) found.`);
+}
+
+async function loadAdminFiles() {
+  if (!currentUser || !isAdmin(currentUser)) return;
+
+  const listEl = byId("adminFilesList");
+  listEl.innerHTML = "Loading...";
+
+  const { data, error } = await supabaseClient.storage
+    .from("reference-docs")
+    .list(currentUser.id, { limit: 100 });
+
+  if (error) {
+    console.error(error);
+    listEl.innerHTML = "Could not load files";
+    return;
+  }
+
+  if (!data || !data.length) {
+    listEl.innerHTML = "<div class='file-row'>No files uploaded</div>";
+    return;
+  }
+
+  listEl.innerHTML = "";
+
+  data.forEach(file => {
+    const row = document.createElement("div");
+    row.className = "file-row";
+
+    const name = document.createElement("span");
+    name.textContent = file.name;
+
+    const btn = document.createElement("button");
+    btn.textContent = "Delete";
+    btn.type = "button";
+    btn.onclick = async function () {
+      await deleteAdminFile(file.name);
+    };
+
+    row.appendChild(name);
+    row.appendChild(btn);
+    listEl.appendChild(row);
+  });
+}
+
+async function deleteAdminFile(fileName) {
+  if (!currentUser || !isAdmin(currentUser)) {
+    setAdminStatus("Admin only");
+    return;
+  }
+
+  setAdminStatus("Deleting...");
+
+  const path = `${currentUser.id}/${fileName}`;
+
+  const { error } = await supabaseClient.storage
+    .from("reference-docs")
+    .remove([path]);
+
+  if (error) {
+    console.error(error);
+    setAdminStatus(`Delete failed: ${error.message}`);
+    return;
+  }
+
+  setAdminStatus("File deleted");
+  await loadStoredDocuments();
+  await loadAdminFiles();
 }
 
 function extractRelevant(topic) {
@@ -258,10 +336,26 @@ function initButtons() {
 async function initAuth() {
   try {
     const { data } = await supabaseClient.auth.getSession();
-    updateAuthUI(data.session?.user ?? null);
+    const user = data.session?.user ?? null;
+    updateAuthUI(user);
 
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      updateAuthUI(session?.user ?? null);
+    if (user) {
+      await loadStoredDocuments();
+      if (isAdmin(user)) {
+        await loadAdminFiles();
+      }
+    }
+
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      const userNow = session?.user ?? null;
+      updateAuthUI(userNow);
+
+      if (userNow) {
+        await loadStoredDocuments();
+        if (isAdmin(userNow)) {
+          await loadAdminFiles();
+        }
+      }
     });
   } catch (err) {
     console.error(err);
