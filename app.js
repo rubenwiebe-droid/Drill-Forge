@@ -1,159 +1,157 @@
 const SUPABASE_URL = "https://ziaaklihkikgpzttptpo.supabase.co";
-const SUPABASE_KEY = "sb_publishable_wJgkFs35Ko9evNW4JPZL9w_JVq2WVcS";
+const SUPABASE_KEY = "PASTE YOUR ANON KEY HERE";
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function byId(id){ return document.getElementById(id); }
+
+// ---------------- AUTH ----------------
+
+function setAuthStatus(msg){
+  byId("authStatus").textContent = msg;
+}
+
+function updateAuthUI(user){
+  const generator = byId("generatorArea");
+  const authBox = document.querySelector(".auth-box");
+
+  if(user){
+    generator.style.display = "block";
+    authBox.style.display = "none";
+    setAuthStatus("Signed in: " + user.email);
+  } else {
+    generator.style.display = "none";
+    authBox.style.display = "block";
+    setAuthStatus("Not logged in");
+  }
+}
+
+supabase.auth.onAuthStateChange((event, session) => {
+  updateAuthUI(session?.user || null);
+});
+
+async function signUp(){
+  setAuthStatus("Trying sign up...");
+  const { error } = await supabase.auth.signUp({
+    email: byId("email").value,
+    password: byId("password").value
+  });
+
+  setAuthStatus(error ? error.message : "Signup successful");
+}
+
+async function signIn(){
+  setAuthStatus("Trying sign in...");
+  const { error } = await supabase.auth.signInWithPassword({
+    email: byId("email").value,
+    password: byId("password").value
+  });
+
+  setAuthStatus(error ? error.message : "Signed in");
+}
+
+async function signOutUser(){
+  await supabase.auth.signOut();
+}
+
+// ---------------- DOCS ----------------
 
 let docs = [];
 let docsLoaded = false;
 
-function byId(id) {
-  return document.getElementById(id);
-}
+byId("docs").addEventListener("change", function(e){
+  docs = [];
+  docsLoaded = false;
 
-function setAuthStatus(message) {
-  const el = byId("authStatus");
-  if (el) el.textContent = message;
-}
+  let files = e.target.files;
+  let loaded = 0;
 
-function updateAuthUI(user) {
-  const generatorArea = document.querySelector(".app");
-  const authBox = document.querySelector(".auth-box");
+  for(let file of files){
+    let reader = new FileReader();
 
-  if (user) {
-    if (generatorArea) generatorArea.style.display = "block";
-    if (authBox) authBox.style.display = "none";
-    setAuthStatus(`Signed in as ${user.email}`);
-  } else {
-    if (generatorArea) generatorArea.style.display = "none";
-    if (authBox) authBox.style.display = "block";
-    setAuthStatus("Not logged in");
+    reader.onload = function(evt){
+      docs.push({
+        name: file.name,
+        content: evt.target.result.toLowerCase()
+      });
+
+      loaded++;
+      if(loaded === files.length){
+        docsLoaded = true;
+        byId("status").textContent = files.length + " docs ready";
+      }
+    };
+
+    reader.readAsText(file);
   }
-}
-async function signUp() {
-  setAuthStatus("Trying sign up...");
+});
 
-  const email = byId("email").value.trim();
-  const password = byId("password").value;
+function extractRelevant(topic){
+  let results = [];
+  let t = topic.toLowerCase();
 
-  if (!email || !password) {
-    setAuthStatus("Enter email and password");
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signUp({
-    email,
-    password
-  });
-
-  if (error) {
-    setAuthStatus(error.message);
-  } else {
-    setAuthStatus("Signup successful. Check your email if confirmation is required.");
-  }
-}
-
-async function signIn() {
-  setAuthStatus("Trying sign in...");
-
-  const email = byId("email").value.trim();
-  const password = byId("password").value;
-
-  if (!email || !password) {
-    setAuthStatus("Enter email and password");
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    setAuthStatus(error.message);
-  }
-}
-
-async function signOutUser() {
-  setAuthStatus("Signing out...");
-
-  const { error } = await supabaseClient.auth.signOut();
-
-  if (error) {
-    setAuthStatus(error.message);
-  } else {
-    updateAuthUI(null);
-  }
-}
-
-function extractRelevant(topic) {
-  const results = [];
-  const t = topic.toLowerCase();
-
-  for (const d of docs) {
-    if (d.content.includes(t)) {
+  for(let d of docs){
+    if(d.content.includes(t)){
       results.push(d.name);
     }
   }
   return results;
 }
 
-function generate() {
-  const nfpa = byId("nfpa").value;
-  const dur = byId("duration").value;
-  const type = byId("type").value;
-  const format = byId("format").value;
-  const topic = byId("topic").value.trim();
+// ---------------- GENERATOR ----------------
 
-  if (!topic) {
-    byId("output").textContent = "Enter a topic.";
+function generate(){
+  let nfpa = byId("nfpa").value;
+  let dur = byId("duration").value;
+  let type = byId("type").value;
+  let format = byId("format").value;
+  let topic = byId("topic").value;
+
+  if(!topic){
+    byId("output").textContent = "Enter a topic";
     return;
   }
 
-  const refs = docsLoaded ? extractRelevant(topic) : [];
-  const refText = refs.length ? refs.join("\n") : "No matching documents";
+  let refs = docsLoaded ? extractRelevant(topic) : [];
+  let refText = refs.length ? refs.join("\n") : "No matching documents";
 
   let output = "";
 
-  if (type === "Lesson Plan") {
-    output = `BFES LESSON PLAN
+  if(type === "Lesson Plan"){
+    output = `
+BFES LESSON PLAN
 
 SUBJECT: ${topic}
 NFPA: ${nfpa}
 TIME: ${dur}
 
-LEARNING OUTCOMES:
-- Apply ${topic} safely
-- Demonstrate competency per ${nfpa}
+OBJECTIVES:
+- Apply ${topic}
+- Meet ${nfpa}
 
-LESSON OUTLINE:
-${format === "Detailed" ? "- Theory\n- Demonstration\n- Practical\n- Evaluation" : "- Overview\n- Practical\n- Review"}
-
-APPLICATION:
-Scenario-based evaluation
+CONTENT:
+${format === "Detailed"
+? "- Theory\n- Demonstration\n- Practical\n- Evaluation\n- Safety Considerations"
+: "- Overview\n- Practical\n- Review"}
 
 REFERENCES:
-1. Department Docs:
 ${refText}
-
-2. NFPA:
 ${nfpa}
 `;
   } else {
-    output = `BFES SKILL SHEET
+    output = `
+SKILL SHEET
 
 TITLE: ${topic}
 STANDARD: ${nfpa}
 
 STEPS:
-1. Prepare equipment
-2. Perform ${topic}
-3. Maintain safety
+1. Prepare
+2. Execute ${topic}
+3. Safety check
 
 REFERENCES:
-1. Department Docs:
 ${refText}
-
-2. NFPA:
 ${nfpa}
 `;
   }
@@ -161,83 +159,20 @@ ${nfpa}
   byId("output").textContent = output;
 }
 
-function exportPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const text = byId("output").textContent;
+// ---------------- PDF ----------------
 
-  if (!text) {
-    alert("Generate content first");
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  let doc = new jsPDF();
+
+  let text = byId("output").textContent;
+
+  if(!text){
+    alert("Generate first");
     return;
   }
 
-  const lines = doc.splitTextToSize(text, 180);
+  let lines = doc.splitTextToSize(text, 180);
   doc.text(lines, 10, 10);
   doc.save("DrillForge.pdf");
 }
-
-function initDocsUpload() {
-  const docsInput = byId("docs");
-  if (!docsInput) return;
-
-  docsInput.addEventListener("change", function (e) {
-    docs = [];
-    docsLoaded = false;
-
-    const files = e.target.files;
-    let loadedCount = 0;
-
-    if (!files.length) {
-      byId("status").textContent = "No documents loaded";
-      return;
-    }
-
-    for (const file of files) {
-      const reader = new FileReader();
-
-      reader.onload = function (evt) {
-        docs.push({
-          name: file.name,
-          content: String(evt.target.result).toLowerCase()
-        });
-
-        loadedCount += 1;
-
-        if (loadedCount === files.length) {
-          docsLoaded = true;
-          byId("status").textContent = `${files.length} documents ready`;
-        }
-      };
-
-      reader.readAsText(file);
-    }
-  });
-}
-
-function initButtons() {
-  byId("signUpBtn").addEventListener("click", signUp);
-  byId("signInBtn").addEventListener("click", signIn);
-  byId("signOutBtn").addEventListener("click", signOutUser);
-  byId("generateBtn").addEventListener("click", generate);
-  byId("exportPdfBtn").addEventListener("click", exportPDF);
-}
-
-async function initAuth() {
-  const { data, error } = await supabaseClient.auth.getSession();
-
-  if (error) {
-    updateAuthUI(null);
-  } else {
-    updateAuthUI(data.session?.user ?? null);
-  }
-
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    updateAuthUI(session?.user ?? null);
-  });
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  initButtons();
-  initDocsUpload();
-  initAuth();
-});
