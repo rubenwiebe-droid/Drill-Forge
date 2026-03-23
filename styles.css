@@ -1,0 +1,33 @@
+body{
+background:#0b0b0b;
+color:white;
+font-family:Arial;
+padding:20px;
+}
+.app{
+max-width:600px;
+margin:auto;
+}
+select,input,button{
+width:100%;
+margin:8px 0;
+padding:12px;
+border-radius:10px;
+border:none;
+}
+button{
+background:#d62828;
+color:white;
+font-weight:bold;
+}
+pre{
+background:#111;
+padding:15px;
+border-radius:10px;
+white-space:pre-wrap;
+}
+#status{
+margin:10px 0;
+color:#ccc;
+font-size:14px;
+}
