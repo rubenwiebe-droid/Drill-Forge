@@ -1,138 +1,93 @@
 const SUPABASE_URL = "https://ziaaklihkikgpzttppto.supabase.co";
 const SUPABASE_KEY = "sb_publishable_wJgkFs35Ko9evNW4JPZL9w_JVq2WVcS";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let docs = [];
 let docsLoaded = false;
 
-function setStatus(message) {
-  const el = document.getElementById("authStatus");
+function byId(id) {
+  return document.getElementById(id);
+}
+
+function setAuthStatus(message) {
+  const el = byId("authStatus");
   if (el) el.textContent = message;
 }
 
 function updateAuthUI(user) {
-  const generatorArea = document.getElementById("generatorArea");
+  const generatorArea = byId("generatorArea");
 
   if (user) {
     if (generatorArea) generatorArea.style.display = "block";
-    setStatus(`Signed in as ${user.email}`);
+    setAuthStatus(`Signed in as ${user.email}`);
   } else {
     if (generatorArea) generatorArea.style.display = "none";
-    setStatus("Not logged in");
+    setAuthStatus("Not logged in");
   }
 }
 
 async function signUp() {
-  setStatus("Trying sign up...");
+  setAuthStatus("Trying sign up...");
 
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+  const email = byId("email").value.trim();
+  const password = byId("password").value;
 
   if (!email || !password) {
-    setStatus("Enter email and password");
+    setAuthStatus("Enter email and password");
     return;
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { error } = await supabaseClient.auth.signUp({
     email,
     password
   });
 
   if (error) {
-    setStatus(error.message);
+    setAuthStatus(error.message);
   } else {
-    setStatus("Signup successful. Check your email if needed.");
+    setAuthStatus("Signup successful. Check your email if confirmation is required.");
   }
 }
 
 async function signIn() {
-  setStatus("Trying sign in...");
+  setAuthStatus("Trying sign in...");
 
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+  const email = byId("email").value.trim();
+  const password = byId("password").value;
 
   if (!email || !password) {
-    setStatus("Enter email and password");
+    setAuthStatus("Enter email and password");
     return;
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabaseClient.auth.signInWithPassword({
     email,
     password
   });
 
   if (error) {
-    setStatus(error.message);
+    setAuthStatus(error.message);
   }
 }
 
 async function signOutUser() {
-  setStatus("Signing out...");
+  setAuthStatus("Signing out...");
 
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabaseClient.auth.signOut();
 
   if (error) {
-    setStatus(error.message);
+    setAuthStatus(error.message);
   } else {
-    setStatus("Signed out");
-  }
-}
-
-supabase.auth.getUser().then(({ data, error }) => {
-  if (error) {
-    console.error(error);
     updateAuthUI(null);
-    return;
   }
-  updateAuthUI(data.user);
-});
-
-supabase.auth.onAuthStateChange((event, session) => {
-  updateAuthUI(session?.user ?? null);
-});
-
-const docsInput = document.getElementById("docs");
-if (docsInput) {
-  docsInput.addEventListener("change", function (e) {
-    docs = [];
-    docsLoaded = false;
-
-    let files = e.target.files;
-    let loadedCount = 0;
-
-    if (files.length === 0) {
-      document.getElementById("status").textContent = "No documents loaded";
-      return;
-    }
-
-    for (let file of files) {
-      let reader = new FileReader();
-
-      reader.onload = function (evt) {
-        docs.push({
-          name: file.name,
-          content: evt.target.result.toLowerCase()
-        });
-
-        loadedCount++;
-
-        if (loadedCount === files.length) {
-          docsLoaded = true;
-          document.getElementById("status").textContent = files.length + " documents ready";
-        }
-      };
-
-      reader.readAsText(file);
-    }
-  });
 }
 
 function extractRelevant(topic) {
-  let results = [];
-  let t = topic.toLowerCase();
+  const results = [];
+  const t = topic.toLowerCase();
 
-  for (let d of docs) {
+  for (const d of docs) {
     if (d.content.includes(t)) {
       results.push(d.name);
     }
@@ -141,19 +96,19 @@ function extractRelevant(topic) {
 }
 
 function generate() {
-  let nfpa = document.getElementById("nfpa").value;
-  let dur = document.getElementById("duration").value;
-  let type = document.getElementById("type").value;
-  let format = document.getElementById("format").value;
-  let topic = document.getElementById("topic").value.trim();
+  const nfpa = byId("nfpa").value;
+  const dur = byId("duration").value;
+  const type = byId("type").value;
+  const format = byId("format").value;
+  const topic = byId("topic").value.trim();
 
   if (!topic) {
-    document.getElementById("output").textContent = "Enter a topic.";
+    byId("output").textContent = "Enter a topic.";
     return;
   }
 
-  let refs = docsLoaded ? extractRelevant(topic) : [];
-  let refText = refs.length ? refs.join("\n") : "No matching documents";
+  const refs = docsLoaded ? extractRelevant(topic) : [];
+  const refText = refs.length ? refs.join("\n") : "No matching documents";
 
   let output = "";
 
@@ -201,20 +156,87 @@ ${nfpa}
 `;
   }
 
-  document.getElementById("output").textContent = output;
+  byId("output").textContent = output;
 }
 
 function exportPDF() {
   const { jsPDF } = window.jspdf;
-  let doc = new jsPDF();
-  let text = document.getElementById("output").textContent;
+  const doc = new jsPDF();
+  const text = byId("output").textContent;
 
   if (!text) {
     alert("Generate content first");
     return;
   }
 
-  let lines = doc.splitTextToSize(text, 180);
+  const lines = doc.splitTextToSize(text, 180);
   doc.text(lines, 10, 10);
   doc.save("DrillForge.pdf");
 }
+
+function initDocsUpload() {
+  const docsInput = byId("docs");
+  if (!docsInput) return;
+
+  docsInput.addEventListener("change", function (e) {
+    docs = [];
+    docsLoaded = false;
+
+    const files = e.target.files;
+    let loadedCount = 0;
+
+    if (!files.length) {
+      byId("status").textContent = "No documents loaded";
+      return;
+    }
+
+    for (const file of files) {
+      const reader = new FileReader();
+
+      reader.onload = function (evt) {
+        docs.push({
+          name: file.name,
+          content: String(evt.target.result).toLowerCase()
+        });
+
+        loadedCount += 1;
+
+        if (loadedCount === files.length) {
+          docsLoaded = true;
+          byId("status").textContent = `${files.length} documents ready`;
+        }
+      };
+
+      reader.readAsText(file);
+    }
+  });
+}
+
+function initButtons() {
+  byId("signUpBtn").addEventListener("click", signUp);
+  byId("signInBtn").addEventListener("click", signIn);
+  byId("signOutBtn").addEventListener("click", signOutUser);
+  byId("generateBtn").addEventListener("click", generate);
+  byId("exportPdfBtn").addEventListener("click", exportPDF);
+}
+
+async function initAuth() {
+  const { data, error } = await supabaseClient.auth.getUser();
+
+  if (error) {
+    console.error(error);
+    updateAuthUI(null);
+  } else {
+    updateAuthUI(data.user);
+  }
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    updateAuthUI(session?.user ?? null);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  initButtons();
+  initDocsUpload();
+  initAuth();
+});

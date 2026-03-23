@@ -22,6 +22,7 @@ button{
   background:#d62828;
   color:white;
   font-weight:bold;
+  cursor:pointer;
 }
 
 pre{
@@ -46,26 +47,6 @@ pre{
 
 .auth-box h2{
   margin-top:0;
-}
-
-.auth-box input{
-  display:block;
-  width:100%;
-  margin-bottom:10px;
-  padding:10px;
-  border-radius:8px;
-  border:none;
-}
-
-.auth-box button{
-  margin-right:10px;
-  margin-top:5px;
-  padding:10px 14px;
-  border:none;
-  border-radius:8px;
-  background:#e50914;
-  color:white;
-  cursor:pointer;
 }
 
 #authStatus{

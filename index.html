@@ -5,18 +5,18 @@
   <title>Drill Forge V8 FIXED</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
   <div class="app">
 
     <div class="auth-box">
       <h2>Login</h2>
       <input id="email" type="email" placeholder="Email" />
       <input id="password" type="password" placeholder="Password" />
-      <button onclick="signUp()">Sign Up</button>
-      <button onclick="signIn()">Sign In</button>
-      <button onclick="signOutUser()">Sign Out</button>
+      <button id="signUpBtn" type="button">Sign Up</button>
+      <button id="signInBtn" type="button">Sign In</button>
+      <button id="signOutBtn" type="button">Sign Out</button>
       <div id="authStatus">Not logged in</div>
     </div>
 
@@ -53,15 +53,14 @@
 
       <div id="status">No documents loaded</div>
 
-      <button onclick="generate()">Generate</button>
-      <button onclick="exportPDF()">Export PDF</button>
+      <button id="generateBtn" type="button">Generate</button>
+      <button id="exportPdfBtn" type="button">Export PDF</button>
 
       <pre id="output"></pre>
     </div>
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
