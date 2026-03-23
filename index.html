@@ -9,6 +9,17 @@
 <body>
 
 <div class="app">
+
+<div class="auth-box">
+  <h2>Login</h2>
+  <input id="email" type="email" placeholder="Email" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="signUp()">Sign Up</button>
+  <button onclick="signIn()">Sign In</button>
+  <button onclick="signOutUser()">Sign Out</button>
+  <div id="authStatus">Not logged in</div>
+</div>
+
 <h1>Drill Forge</h1>
 
 <select id="nfpa">
@@ -48,6 +59,7 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
 </body>
 </html>
