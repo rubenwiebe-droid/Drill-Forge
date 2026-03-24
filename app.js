@@ -785,20 +785,39 @@ function assignmentItems(topic, nfpa, depth) {
   return items;
 }
  
-function scoreLine(line, topicWords) {
+function scoreLine(line, topic) {
   const lower = line.toLowerCase();
- 
- if (
-  lower.includes("this text document") ||
-  lower.includes("extracted text") ||
-  lower.includes("includes the key") ||
-  lower.includes("note:") ||
-  lower.includes("copyright") ||
-  lower.includes("all rights reserved") ||
-  lower.includes("national fire protection association") ||
-  lower.includes("notice and disclaimer")
-) {
-  return -1;
+
+  // ❌ Remove junk / garbage lines
+  if (
+    lower.includes("this text document") ||
+    lower.includes("extracted text") ||
+    lower.includes("includes the key") ||
+    lower.includes("note:") ||
+    lower.includes("copyright") ||
+    lower.includes("all rights reserved") ||
+    lower.includes("national fire protection association") ||
+    lower.includes("notice and disclaimer")
+  ) {
+    return -1;
+  }
+
+  let score = 0;
+
+  // 🔥 THIS IS THE FIX — use topic directly
+  if (topic && lower.includes(topic.toLowerCase())) {
+    score += 5;
+  }
+
+  // JPR indicators
+  if (/^\s*\d+\.\d+\.\d+\b/.test(lower)) score += 3;
+  if (lower.includes("jpr")) score += 2;
+  if (lower.includes("job performance requirement")) score += 2;
+  if (lower.includes("shall")) score += 2;
+  if (lower.startsWith("the firefighter shall")) score += 2;
+  if (lower.startsWith("the candidate shall")) score += 2;
+
+  return score;
 }
 
 let score = 0;
