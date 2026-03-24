@@ -1125,7 +1125,7 @@ function buildUploadedContentSteps(topicLabel, matchData, fallbackSteps) {
   const contentSteps = matchData.teaching
     .slice(0, 4)
     .map(item => item.excerpt)
-    .filter(Boolean);
+.filter(x => x && x.length > 40);
 
   if (!contentSteps.length) {
     return fallbackSteps;
