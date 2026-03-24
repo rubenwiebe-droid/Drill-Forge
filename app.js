@@ -868,6 +868,22 @@ function scoreSection(section, topic) {
   const text = normalizeText(section.content);
   if (!text || text.length < 40) return -999;
 
+  const fluffPatterns = [
+  "this is why",
+  "you must define",
+  "find one that works",
+  "begin accelerating",
+  "for your organization",
+  "widely varying personal opinions",
+  "hold ourselves accountable",
+  "good luck",
+  "stay safe"
+];
+
+for (const fluff of fluffPatterns) {
+  if (text.includes(fluff)) return -999;
+}
+  
   const badPatterns = [
     "copyright",
     "all rights reserved",
