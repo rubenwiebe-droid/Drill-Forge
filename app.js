@@ -828,59 +828,108 @@ function assignmentItems(topic, nfpa, depth) {
   return items;
 }
 
-function scoreLine(line, topic) {
-  const lower = line.toLowerCase();
+function normalizeText(text) {
+  return (text || "")
+    .toLowerCase()
+    .replace(/[^\w\s.-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function topicKeywords(topic) {
+  const t = normalizeText(topic);
+  const words = t.split(" ").filter(w => w.length > 2);
+
+  const map = {
+    search: ["search", "rescue", "victim", "oriented", "orientation", "wall", "room", "crew integrity", "primary", "secondary"],
+    ladders: ["ladder", "extension ladder", "roof ladder", "carry", "raise", "climb", "beam", "fly"],
+    ventilation: ["ventilation", "vent", "horizontal", "vertical", "flow path", "opening", "roof"],
+    "confined-space": ["confined space", "atmosphere", "monitoring", "entry", "attendant", "retrieval", "permit"],
+    rope: ["rope", "anchor", "belay", "edge", "haul", "lower", "system", "rigging"],
+    water: ["water", "ice", "swift", "flood", "reach", "throw", "row", "go", "shore"],
+    fireground: ["hose", "standpipe", "forcible entry", "fire attack", "nozzle", "stretch"],
+    officer: ["supervision", "leadership", "command", "decision", "accountability"],
+    instruction: ["instruction", "learning", "evaluation", "lesson", "student", "objective"]
+  };
+
+  let kind = "general";
+  if (t.includes("search")) kind = "search";
+  else if (t.includes("ladder")) kind = "ladders";
+  else if (t.includes("vent")) kind = "ventilation";
+  else if (t.includes("confined")) kind = "confined-space";
+  else if (t.includes("rope")) kind = "rope";
+  else if (t.includes("water") || t.includes("ice") || t.includes("swift")) kind = "water";
+  else if (t.includes("hose") || t.includes("standpipe") || t.includes("forcible") || t.includes("fire attack")) kind = "fireground";
+
+  return [...new Set([...words, ...(map[kind] || [])])];
+}
+
+function scoreSection(section, topic) {
+  const text = normalizeText(section.content);
+  if (!text || text.length < 40) return -999;
 
   if (
-    lower.includes("this text document") ||
-    lower.includes("extracted text") ||
-    lower.includes("includes the key") ||
-    lower.includes("note:") ||
-    lower.includes("copyright") ||
-    lower.includes("all rights reserved") ||
-    lower.includes("national fire protection association") ||
-    lower.includes("notice and disclaimer")
+    text.includes("copyright") ||
+    text.includes("all rights reserved") ||
+    text.includes("national fire protection association") ||
+    text.includes("notice and disclaimer") ||
+    text.includes("this text document") ||
+    text.includes("extracted text")
   ) {
-    return -1;
+    return -999;
   }
 
-  const topicLower = topic ? topic.toLowerCase() : "";
+  const keywords = topicKeywords(topic);
+  let score = 0;
+  let keywordHits = 0;
 
-  let topicMatch = false;
-
-  if (!topicLower) {
-    topicMatch = true;
-  } else if (topicLower.includes("search")) {
-    topicMatch =
-      lower.includes("search") ||
-      lower.includes("rescue") ||
-      lower.includes("victim");
-  } else if (topicLower.includes("ladder")) {
-    topicMatch = lower.includes("ladder");
-  } else if (topicLower.includes("vent")) {
-    topicMatch =
-      lower.includes("ventilation") ||
-      lower.includes("horizontal ventilation") ||
-      lower.includes("vertical ventilation") ||
-      lower.includes("vent");
-  } else {
-    topicMatch = lower.includes(topicLower);
+  for (const keyword of keywords) {
+    if (text.includes(keyword)) {
+      keywordHits += 1;
+      score += keyword.includes(" ") ? 5 : 3;
+    }
   }
 
-  if (!topicMatch) {
-    return -1;
-  }
+  if (keywordHits === 0) return -999;
 
-  let score = 5;
+  if (/^\d+\.\d+\.\d+/.test(text)) score += 8;
+  if (text.includes("job performance requirement")) score += 6;
+  if (text.includes("the firefighter shall")) score += 6;
+  if (text.includes("the candidate shall")) score += 6;
+  if (text.includes("shall")) score += 2;
 
-  if (/\b\d+\.\d+\.\d+\b/.test(lower)) score += 3;
-  if (lower.includes("jpr")) score += 2;
-  if (lower.includes("job performance requirement")) score += 2;
-  if (lower.includes("shall")) score += 2;
-  if (lower.startsWith("the firefighter shall")) score += 2;
-  if (lower.startsWith("the candidate shall")) score += 2;
+  if (section.section_type === "jpr") score += 5;
+  if (section.section_type === "procedure") score += 4;
+  if (section.section_type === "safety") score += 4;
+
+  if (text.length > 120 && text.length < 1200) score += 3;
 
   return score;
+}
+
+function cleanExcerpt(text, maxLen = 280) {
+  const clean = (text || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= maxLen) return clean;
+  return clean.slice(0, maxLen).trim() + "...";
+}
+
+function dedupeByContent(items) {
+  const seen = new Set();
+  return items.filter(item => {
+    const key = `${item.filename}::${normalizeText(item.excerpt || item.content)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function cleanReferenceName(filename) {
+  return (filename || "")
+    .replace(/[_+]/g, " ")
+    .replace(/\.txt$/i, "")
+    .replace(/\.pdf$/i, "")
+    .replace(/\.docx$/i, "")
+    .trim();
 }
 
 function findExactMatches(topic) {
