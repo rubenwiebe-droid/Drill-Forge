@@ -933,64 +933,59 @@ function cleanReferenceName(filename) {
 }
 
 function findExactMatches(topic) {
-  const jprMatches = [];
-  const referenceMatches = [];
+  const uploadedJprs = [];
+  const uploadedTeaching = [];
+  const uploadedSafety = [];
 
   for (const doc of docs) {
-    const text = doc.content || "";
-    if (!text) continue;
+    const sections = doc.sections || [];
+    if (!sections.length) continue;
 
-    const lines = text
-      .split(/\r?\n/)
-      .map(l => l.trim())
-      .filter(Boolean);
-
-    for (const line of lines) {
-      const lower = line.toLowerCase();
-
-      if (
-  lower.includes("copyright") ||
-  lower.includes("all rights reserved") ||
-  lower.includes("national fire protection association") ||
-  lower.includes("notice and disclaimer")
-) {
-        
-  continue;
-}
-
-      const score = scoreLine(line, topic);
-      if (score < 2) continue;
-
-      const looksLikeJpr = /\b\d+\.\d+\.\d+\b/.test(lower);
+    for (const section of sections) {
+      const score = scoreSection(section, topic);
+      if (score < 6) continue;
 
       const item = {
         filename: doc.name,
-        excerpt: line.replace(/^[-•\s]+/, "").trim(),
+        sectionType: section.section_type || "general",
+        heading: section.heading || "",
+        subheading: section.subheading || "",
+        content: section.content,
+        excerpt: cleanExcerpt(section.content),
         score
       };
 
-      if (looksLikeJpr) {
-        jprMatches.push(item);
+      if (section.section_type === "jpr" || /^\d+\.\d+\.\d+/.test(section.content || "")) {
+        uploadedJprs.push(item);
+      } else if (section.section_type === "safety") {
+        uploadedSafety.push(item);
       } else {
-        referenceMatches.push(item);
+        uploadedTeaching.push(item);
       }
     }
   }
 
-  const dedupedJprs = dedupeMatches(jprMatches);
-  const dedupedRefs = dedupeMatches(referenceMatches);
+  const jprs = dedupeByContent(uploadedJprs)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
 
-const finalJprs = dedupedJprs
-  .filter(item => item.score >= 4)
-  .slice(0, 3);
+  const teaching = dedupeByContent(uploadedTeaching)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
 
-const finalRefs = dedupedRefs
-  .filter(item => item.score >= 1)
-  .slice(0, 6);
+  const safety = dedupeByContent(uploadedSafety)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  const references = dedupeByContent([...jprs, ...teaching, ...safety])
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8);
 
   return {
-    jprs: finalJprs,
-    references: finalRefs
+    jprs,
+    teaching,
+    safety,
+    references
   };
 }
 
