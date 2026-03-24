@@ -945,20 +945,26 @@ for (const bad of badPatterns) {
   return score;
 }
 
-function cleanExcerpt(text, maxLen = 280) {
-  const clean = (text || "").replace(/\s+/g, " ").trim();
-  if (clean.length <= maxLen) return clean;
-  return clean.slice(0, maxLen).trim() + "...";
-}
+function cleanExcerpt(text, maxLen = 220) {
+  let clean = (text || "")
+    .replace(/===.*?===/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/•/g, "")
+    .replace(/\|/g, "")
+    .trim();
 
-function dedupeByContent(items) {
-  const seen = new Set();
-  return items.filter(item => {
-    const key = `${item.filename}::${normalizeText(item.excerpt || item.content)}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  // Remove obvious junk sentences
+  if (
+    clean.toLowerCase().includes("book of search by firefighters") ||
+    clean.toLowerCase().includes("pdf is free") ||
+    clean.toLowerCase().includes("all articles, artwork")
+  ) {
+    return "";
+  }
+
+  if (clean.length <= maxLen) return clean;
+
+  return clean.slice(0, maxLen).trim() + "...";
 }
 
 function cleanReferenceName(filename) {
