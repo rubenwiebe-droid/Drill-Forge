@@ -865,70 +865,28 @@ function topicKeywords(topic) {
 }
 
 function scoreSection(section, topic) {
-  const badPatterns = [
-  "copyright",
-  "all rights reserved",
-  "national fire protection association",
-  "notice and disclaimer",
-  "this text document",
-  "extracted text",
-  "share it with everyone",
-  "the pdf is free",
-  "proceeds from the sale",
-  "page |",
-  "p a g e",
-  "table of contents",
-  "acknowledgement",
-  "foreword"
-];
-
- if (section.section_type === "safety") {
-  if (
-    !text.includes("hazard") &&
-    !text.includes("risk") &&
-    !text.includes("ppe") &&
-    !text.includes("control") &&
-    !text.includes("zone") &&
-    !text.includes("air") &&
-    !text.includes("visibility")
-  ) {
-    score -= 5;
-  }
-}
-  
-if (
-  text.includes("perform") ||
-  text.includes("ensure") ||
-  text.includes("confirm") ||
-  text.includes("maintain") ||
-  text.includes("check") ||
-  text.includes("verify") ||
-  text.includes("communicate") ||
-  text.includes("search pattern") ||
-  text.includes("crew integrity") ||
-  text.includes("orientation")
-) {
-  score += 6;
-} 
-if (text.split(" ").length < 12) score -= 5;
-if ((text.match(/\./g) || []).length < 1) score -= 3;
-  
-for (const bad of badPatterns) {
-  if (text.includes(bad)) return -999;
-}
-  
   const text = normalizeText(section.content);
   if (!text || text.length < 40) return -999;
 
-  if (
-    text.includes("copyright") ||
-    text.includes("all rights reserved") ||
-    text.includes("national fire protection association") ||
-    text.includes("notice and disclaimer") ||
-    text.includes("this text document") ||
-    text.includes("extracted text")
-  ) {
-    return -999;
+  const badPatterns = [
+    "copyright",
+    "all rights reserved",
+    "national fire protection association",
+    "notice and disclaimer",
+    "this text document",
+    "extracted text",
+    "share it with everyone",
+    "the pdf is free",
+    "proceeds from the sale",
+    "page |",
+    "p a g e",
+    "table of contents",
+    "acknowledgement",
+    "foreword"
+  ];
+
+  for (const bad of badPatterns) {
+    if (text.includes(bad)) return -999;
   }
 
   const keywords = topicKeywords(topic);
@@ -943,6 +901,38 @@ for (const bad of badPatterns) {
   }
 
   if (keywordHits === 0) return -999;
+
+  if (
+    text.includes("perform") ||
+    text.includes("ensure") ||
+    text.includes("confirm") ||
+    text.includes("maintain") ||
+    text.includes("check") ||
+    text.includes("verify") ||
+    text.includes("communicate") ||
+    text.includes("search pattern") ||
+    text.includes("crew integrity") ||
+    text.includes("orientation")
+  ) {
+    score += 6;
+  }
+
+  if (text.split(" ").length < 12) score -= 5;
+  if ((text.match(/\./g) || []).length < 1) score -= 3;
+
+  if (section.section_type === "safety") {
+    if (
+      !text.includes("hazard") &&
+      !text.includes("risk") &&
+      !text.includes("ppe") &&
+      !text.includes("control") &&
+      !text.includes("zone") &&
+      !text.includes("air") &&
+      !text.includes("visibility")
+    ) {
+      score -= 5;
+    }
+  }
 
   if (/^\d+\.\d+\.\d+/.test(text)) score += 8;
   if (text.includes("job performance requirement")) score += 6;
