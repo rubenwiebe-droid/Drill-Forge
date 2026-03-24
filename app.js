@@ -837,7 +837,8 @@ function findExactMatches(topic) {
  
       if (score < 3) continue;
  
-      const looksLikeJpr = /^\s*\d+\.\d+\.\d+\b/.test(lower);
+      const looksLikeJpr =
+  /\b\d+\.\d+\.\d+\b/.test(lower);
  
       const item = {
         filename: doc.name,
