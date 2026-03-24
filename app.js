@@ -137,7 +137,7 @@ async function signOutUser() {
   }
 }
 
-async function extractTextFromFile(file) {
+  async function extractTextFromFile(file) {
   const lower = file.name.toLowerCase();
 
   if (lower.endsWith(".txt") || lower.endsWith(".md")) {
@@ -148,6 +148,22 @@ async function extractTextFromFile(file) {
     const arrayBuffer = await file.arrayBuffer();
     const result = await window.mammoth.extractRawText({ arrayBuffer });
     return result.value || "";
+  }
+
+  if (lower.endsWith(".pdf")) {
+    const arrayBuffer = await file.arrayBuffer();
+
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = "";
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(" ");
+      fullText += pageText + "\n";
+    }
+
+    return fullText;
   }
 
   return "";
