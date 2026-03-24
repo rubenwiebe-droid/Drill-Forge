@@ -865,6 +865,27 @@ function topicKeywords(topic) {
 }
 
 function scoreSection(section, topic) {
+  const badPatterns = [
+  "copyright",
+  "all rights reserved",
+  "national fire protection association",
+  "notice and disclaimer",
+  "this text document",
+  "extracted text",
+  "share it with everyone",
+  "the pdf is free",
+  "proceeds from the sale",
+  "page |",
+  "p a g e",
+  "table of contents",
+  "acknowledgement",
+  "foreword"
+];
+
+for (const bad of badPatterns) {
+  if (text.includes(bad)) return -999;
+}
+  
   const text = normalizeText(section.content);
   if (!text || text.length < 40) return -999;
 
