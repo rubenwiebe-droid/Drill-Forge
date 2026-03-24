@@ -917,7 +917,7 @@ const finalJprs = dedupedJprs
   .slice(0, 3);
 
 const finalRefs = dedupedRefs
-  .filter(item => item.score >= 2)
+  .filter(item => item.score >= 1)
   .slice(0, 6);
 
   return {
