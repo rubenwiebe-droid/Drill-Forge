@@ -932,7 +932,7 @@ ${environment}
  
   if (flags.jpr) {
     output += `
-Relevant JPR(s) for this lesson:
+JPR(s):
 `;
  
     if (matchData.jprs.length) {
