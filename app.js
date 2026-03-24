@@ -208,6 +208,99 @@ async function uploadDocuments() {
       extractedText = "";
     }
 
+    const { data: insertedDoc, error: dbError } = await supabaseClient
+      .from("document_library")
+      .insert({
+        storage_path: path,
+        filename: file.name,
+        file_type: file.type || "",
+        extracted_text: extractedText,
+        uploaded_by: currentUser.id,
+        title: file.name,
+        parse_status: "processing"
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error(dbError);
+      setAdminStatus(`Indexed file failed: ${dbError.message}`);
+      return;
+    }
+
+    const chunks = chunkDocumentText(extractedText);
+
+    if (chunks.length) {
+      const sectionRows = chunks.map((chunk, index) => ({
+        document_id: insertedDoc.id,
+        page_number: chunk.page_number,
+        heading: chunk.heading,
+        subheading: chunk.subheading,
+        section_type: detectSectionType(chunk.content),
+        chunk_index: index,
+        content: chunk.content,
+        content_clean: chunk.content.toLowerCase().trim(),
+        metadata_json: {}
+      }));
+
+      const { error: sectionError } = await supabaseClient
+        .from("document_sections")
+        .insert(sectionRows);
+
+      if (sectionError) {
+        console.error(sectionError);
+        setAdminStatus(`Chunk insert failed: ${sectionError.message}`);
+        return;
+      }
+    }
+
+    await supabaseClient
+      .from("document_library")
+      .update({
+        parse_status: "complete"
+      })
+      .eq("id", insertedDoc.id);
+
+    uploaded += 1;
+  }
+
+  setAdminStatus(`${uploaded} file(s) uploaded and chunked`);
+  docsInput.value = "";
+}
+
+  const docsInput = byId("docs");
+  const files = docsInput ? docsInput.files : null;
+
+  if (!files || !files.length) {
+    setAdminStatus("Choose at least one file");
+    return;
+  }
+
+  setAdminStatus("Uploading and indexing...");
+
+  let uploaded = 0;
+
+  for (const file of files) {
+    const path = `shared/${Date.now()}-${file.name}`;
+
+    const { error: uploadError } = await supabaseClient.storage
+      .from("reference-docs")
+      .upload(path, file, { upsert: false });
+
+    if (uploadError) {
+      console.error(uploadError);
+      setAdminStatus(`Upload failed: ${uploadError.message}`);
+      return;
+    }
+
+    let extractedText = "";
+    try {
+      extractedText = await extractTextFromFile(file);
+    } catch (extractErr) {
+      console.error(extractErr);
+      extractedText = "";
+    }
+
     const { error: dbError } = await supabaseClient
       .from("document_library")
       .insert({
