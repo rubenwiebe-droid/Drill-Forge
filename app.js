@@ -912,9 +912,9 @@ function findExactMatches(topic) {
   const dedupedJprs = dedupeMatches(jprMatches);
   const dedupedRefs = dedupeMatches(referenceMatches);
 
-  const finalJprs = dedupedJprs
-    .filter(item => item.score >= 2)
-    .slice(0, 4);
+const finalJprs = dedupedJprs
+  .filter(item => item.score >= 4)
+  .slice(0, 3);
 
 const finalRefs = dedupedRefs
   .filter(item => item.score >= 2)
