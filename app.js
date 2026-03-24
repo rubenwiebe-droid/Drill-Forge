@@ -954,7 +954,21 @@ function buildJprDrivenSteps(topicLabel, matchData, fallbackSteps) {
     return fallbackSteps;
   }
 
-  const jprText = matchData.jprs.map(x => x.excerpt.toLowerCase()).join(" ");
+ const topic = topicLabel.toLowerCase();
+
+// sort JPRs by how well they match the topic
+const sortedJprs = matchData.jprs.sort((a, b) => {
+  const aText = a.excerpt.toLowerCase();
+  const bText = b.excerpt.toLowerCase();
+
+  const aScore = aText.includes(topic) ? 2 : 0;
+  const bScore = bText.includes(topic) ? 2 : 0;
+
+  return bScore - aScore;
+});
+
+// only use the BEST matching JPR
+const jprText = sortedJprs[0].excerpt.toLowerCase();
 
   const steps = [
     `Review the purpose, scope, and expected outcome for ${topicLabel}.`,
