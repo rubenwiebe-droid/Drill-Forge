@@ -936,7 +936,7 @@ Relevant JPR(s) for this lesson:
 `;
  
     if (matchData.jprs.length) {
-      output += `${matchData.jprs.map(x => `- ${x.excerpt}`).join("\n")}\n`;
+      output += `${matchData.jprs.map(x => `- ${x.excerpt.replace(/^[-•\s]+/, "")}`).join("\n")}\n`;
     } else {
       output += `- No exact JPR wording found in uploaded library.\n`;
     }
