@@ -881,7 +881,7 @@ function findExactMatches(topic) {
       const lower = line.toLowerCase();
 
       if (
-        line.length > 300 ||
+        line.length > 400 ||
         lower.includes("copyright") ||
         lower.includes("all rights reserved") ||
         lower.includes("national fire protection association") ||
@@ -914,11 +914,11 @@ function findExactMatches(topic) {
 
   const finalJprs = dedupedJprs
     .filter(item => item.score >= 2)
-    .slice(0, 6);
+    .slice(0, 4);
 
   const finalRefs = dedupedRefs
-    .filter(item => item.score >= 4)
-    .slice(0, 6);
+    .filter(item => item.score >= 5)
+    .slice(0, 5);
 
   return {
     jprs: finalJprs,
