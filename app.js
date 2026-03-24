@@ -1174,8 +1174,8 @@ function buildUploadedContentSteps(topicLabel, matchData, fallbackSteps) {
   }
 
   for (const step of contentSteps) {
-    steps.push(step.charAt(0).toUpperCase() + step.slice(1));
-  }
+  steps.push(`Instructor emphasis: ${step}`);
+}
 
   steps.push("Connect the uploaded reference material to the practical task, demonstration, or learner evaluation.");
   return steps;
