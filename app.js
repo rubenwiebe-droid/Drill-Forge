@@ -1240,15 +1240,13 @@ ${evalSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
 `;
   }
 
-  if (flags.notes) {
-    output += `
+if (flags.notes) {
+  const noteItems = buildInstructorNotes(matchData);
+  output += `
 NOTES:
-- Match the pace of the lesson to learner experience, available equipment, and training environment.
-- Keep the instruction focused on the selected topic and avoid drifting into unrelated material.
-- Reinforce why each step is completed in that order and what risk is created when steps are skipped.
-- Use coaching pauses throughout the lesson to correct errors before evaluation.
+${noteItems.map(x => `- ${x}`).join("\n")}
 `;
-  }
+}
 
   if (flags.assignment) {
     output += `
