@@ -1002,7 +1002,8 @@ function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliverySty
       ? "Simulated / Controlled"
       : "Mixed / Controlled";
 
-  const procedureSteps = detailedProcedureSteps(topicLabel, deliveryStyle, depth, audienceType, nfpa);
+  const fallbackSteps = detailedProcedureSteps(topicLabel, deliveryStyle, depth, audienceType, nfpa);
+const procedureSteps = buildJprDrivenSteps(topicLabel, matchData, fallbackSteps);
   const errors = commonErrors(topicLabel, nfpa, audienceType);
   const corrections = correctiveActions(topicLabel, nfpa, audienceType);
   const evalSteps = evaluationSequence(topicLabel, nfpa, audienceType);
