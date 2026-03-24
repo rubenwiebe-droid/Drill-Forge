@@ -1099,3 +1099,66 @@ window.onload = function () {
   initButtons();
   initAuth();
 };
+function chunkDocumentText(text) {
+  if (!text) return [];
+
+  const rawParagraphs = text
+    .split(/\n\s*\n+/)
+    .map(p => p.trim())
+    .filter(Boolean);
+
+  const chunks = [];
+  let currentHeading = "";
+
+  for (const para of rawParagraphs) {
+    if (para.length < 40) continue;
+
+    const looksLikeHeading =
+      para.length < 120 &&
+      !para.includes(".") &&
+      para === para.toUpperCase();
+
+    if (looksLikeHeading) {
+      currentHeading = para;
+      continue;
+    }
+
+    chunks.push({
+      page_number: null,
+      heading: currentHeading || null,
+      subheading: null,
+      content: para
+    });
+  }
+
+  return chunks;
+}
+
+function detectSectionType(text) {
+  const lower = text.toLowerCase();
+
+  if (
+    lower.includes("jpr") ||
+    lower.includes("job performance requirement") ||
+    lower.includes("the candidate shall")
+  ) {
+    return "jpr";
+  }
+
+  if (
+    lower.includes("procedure") ||
+    lower.includes("shall") ||
+    lower.includes("step")
+  ) {
+    return "procedure";
+  }
+
+  if (
+    lower.includes("safety") ||
+    lower.includes("hazard")
+  ) {
+    return "safety";
+  }
+
+  return "general";
+}
