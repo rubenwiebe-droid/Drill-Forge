@@ -1282,6 +1282,21 @@ REFERENCES:
   output += uniqueRefs.map(x => `- ${x}`).join("\n") + "\n";
 }
 
+if ((matchData.teaching && matchData.teaching.length) || (matchData.safety && matchData.safety.length)) {
+  output += `
+SOURCE EXCERPTS:
+`;
+
+  const excerptItems = [
+    ...(matchData.teaching || []).slice(0, 3),
+    ...(matchData.safety || []).slice(0, 2)
+  ];
+
+  output += excerptItems
+    .map(item => `- ${cleanReferenceName(item.filename)}: "${item.excerpt}"`)
+    .join("\n") + "\n";
+}
+  
   return output.trim();
 }
 
