@@ -137,7 +137,7 @@ async function signOutUser() {
   }
 }
 
-  async function extractTextFromFile(file) {
+async function extractTextFromFile(file) {
   const lower = file.name.toLowerCase();
 
   if (lower.endsWith(".txt") || lower.endsWith(".md")) {
@@ -152,7 +152,6 @@ async function signOutUser() {
 
   if (lower.endsWith(".pdf")) {
     const arrayBuffer = await file.arrayBuffer();
-
     const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = "";
 
@@ -160,13 +159,82 @@ async function signOutUser() {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
       const pageText = textContent.items.map(item => item.str).join(" ");
-      fullText += pageText + "\n";
+      fullText += pageText + "\n\n";
     }
 
     return fullText;
   }
 
   return "";
+}
+
+function chunkDocumentText(text) {
+  if (!text) return [];
+
+  const rawParagraphs = text
+    .split(/\n\s*\n+/)
+    .map(p => p.trim())
+    .filter(Boolean);
+
+  const chunks = [];
+  let currentHeading = "";
+
+  for (const para of rawParagraphs) {
+    if (para.length < 40) continue;
+
+    const looksLikeHeading =
+      para.length < 120 &&
+      !para.includes(".") &&
+      para === para.toUpperCase();
+
+    if (looksLikeHeading) {
+      currentHeading = para;
+      continue;
+    }
+
+    chunks.push({
+      page_number: null,
+      heading: currentHeading || null,
+      subheading: null,
+      content: para
+    });
+  }
+
+  return chunks;
+}
+
+function detectSectionType(text) {
+  const lower = text.toLowerCase();
+
+  if (
+    lower.includes("jpr") ||
+    lower.includes("job performance requirement") ||
+    lower.includes("the candidate shall") ||
+    lower.includes("the firefighter shall")
+  ) {
+    return "jpr";
+  }
+
+  if (
+    lower.includes("procedure") ||
+    lower.includes("shall") ||
+    lower.includes("must") ||
+    lower.includes("step") ||
+    lower.includes("sequence")
+  ) {
+    return "procedure";
+  }
+
+  if (
+    lower.includes("safety") ||
+    lower.includes("hazard") ||
+    lower.includes("risk") ||
+    lower.includes("warning")
+  ) {
+    return "safety";
+  }
+
+  return "general";
 }
 
 async function uploadDocuments() {
@@ -178,182 +246,13 @@ async function uploadDocuments() {
   const docsInput = byId("docs");
   const files = docsInput ? docsInput.files : null;
 
-    setAdminStatus("Uploading and indexing...");
-
-  let uploaded = 0;
-
-  for (const file of files) {
-    const path = `shared/${Date.now()}-${file.name}`;
-
-    const { error: uploadError } = await supabaseClient.storage
-      .from("reference-docs")
-      .upload(path, file, { upsert: false });
-
-    if (uploadError) {
-      console.error(uploadError);
-      setAdminStatus(`Upload failed: ${uploadError.message}`);
-      return;
-    }
-
-    let extractedText = "";
-    try {
-      extractedText = await extractTextFromFile(file);
-    } catch (extractErr) {
-      console.error(extractErr);
-      extractedText = "";
-    }
-
-    const { data: insertedDoc, error: dbError } = await supabaseClient
-      .from("document_library")
-      .insert({
-        storage_path: path,
-        filename: file.name,
-        file_type: file.type || "",
-        extracted_text: extractedText,
-        uploaded_by: currentUser.id,
-        title: file.name,
-        parse_status: "processing"
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error(dbError);
-      setAdminStatus(`Indexed file failed: ${dbError.message}`);
-      return;
-    }
-
-    const chunks = chunkDocumentText(extractedText);
-
-    if (chunks.length) {
-      const sectionRows = chunks.map((chunk, index) => ({
-        document_id: insertedDoc.id,
-        page_number: chunk.page_number,
-        heading: chunk.heading,
-        subheading: chunk.subheading,
-        section_type: detectSectionType(chunk.content),
-        chunk_index: index,
-        content: chunk.content,
-        content_clean: chunk.content.toLowerCase().trim(),
-        metadata_json: {}
-      }));
-
-      const { error: sectionError } = await supabaseClient
-        .from("document_sections")
-        .insert(sectionRows);
-
-      if (sectionError) {
-        console.error(sectionError);
-        setAdminStatus(`Chunk insert failed: ${sectionError.message}`);
-        return;
-      }
-    }
-
-    await supabaseClient
-      .from("document_library")
-      .update({
-        parse_status: "complete"
-      })
-      .eq("id", insertedDoc.id);
-
-    uploaded += 1;
-  }
-
-  setAdminStatus(`${uploaded} file(s) uploaded and chunked`);
-  docsInput.value = "";
-}
-
-  let uploaded = 0;
-
-  for (const file of files) {
-    const path = `shared/${Date.now()}-${file.name}`;
-
-    const { error: uploadError } = await supabaseClient.storage
-      .from("reference-docs")
-      .upload(path, file, { upsert: false });
-
-    if (uploadError) {
-      console.error(uploadError);
-      setAdminStatus(`Upload failed: ${uploadError.message}`);
-      return;
-    }
-
-    let extractedText = "";
-    try {
-      extractedText = await extractTextFromFile(file);
-    } catch (extractErr) {
-      console.error(extractErr);
-      extractedText = "";
-    }
-
-    const { data: insertedDoc, error: dbError } = await supabaseClient
-      .from("document_library")
-      .insert({
-        storage_path: path,
-        filename: file.name,
-        file_type: file.type || "",
-        extracted_text: extractedText,
-        uploaded_by: currentUser.id,
-        title: file.name,
-        parse_status: "processing"
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error(dbError);
-      setAdminStatus(`Indexed file failed: ${dbError.message}`);
-      return;
-    }
-
-    const chunks = chunkDocumentText(extractedText);
-
-    if (chunks.length) {
-      const sectionRows = chunks.map((chunk, index) => ({
-        document_id: insertedDoc.id,
-        page_number: chunk.page_number,
-        heading: chunk.heading,
-        subheading: chunk.subheading,
-        section_type: detectSectionType(chunk.content),
-        chunk_index: index,
-        content: chunk.content,
-        content_clean: chunk.content.toLowerCase().trim(),
-        metadata_json: {}
-      }));
-
-      const { error: sectionError } = await supabaseClient
-        .from("document_sections")
-        .insert(sectionRows);
-
-      if (sectionError) {
-        console.error(sectionError);
-        setAdminStatus(`Chunk insert failed: ${sectionError.message}`);
-        return;
-      }
-    }
-
-    await supabaseClient
-      .from("document_library")
-      .update({
-        parse_status: "complete"
-      })
-      .eq("id", insertedDoc.id);
-
-    uploaded += 1;
-  }
-
-  setAdminStatus(`${uploaded} file(s) uploaded and chunked`);
-  docsInput.value = "";
-}
-
-  const docsInput = byId("docs");
-  const files = docsInput ? docsInput.files : null;
-
   if (!files || !files.length) {
     setAdminStatus("Choose at least one file");
     return;
   }
 
+  setAdminStatus("Uploading and indexing...");
+
   let uploaded = 0;
 
   for (const file of files) {
@@ -377,15 +276,19 @@ async function uploadDocuments() {
       extractedText = "";
     }
 
-    const { error: dbError } = await supabaseClient
+    const { data: insertedDoc, error: dbError } = await supabaseClient
       .from("document_library")
       .insert({
         storage_path: path,
         filename: file.name,
         file_type: file.type || "",
         extracted_text: extractedText,
-        uploaded_by: currentUser.id
-      });
+        uploaded_by: currentUser.id,
+        title: file.name,
+        parse_status: "processing"
+      })
+      .select()
+      .single();
 
     if (dbError) {
       console.error(dbError);
@@ -393,10 +296,53 @@ async function uploadDocuments() {
       return;
     }
 
+    const chunks = chunkDocumentText(extractedText);
+
+    if (chunks.length) {
+      const sectionRows = chunks.map((chunk, index) => ({
+        document_id: insertedDoc.id,
+        page_number: chunk.page_number,
+        heading: chunk.heading,
+        subheading: chunk.subheading,
+        section_type: detectSectionType(chunk.content),
+        chunk_index: index,
+        content: chunk.content,
+        content_clean: chunk.content.toLowerCase().trim(),
+        metadata_json: {}
+      }));
+
+      const { error: sectionError } = await supabaseClient
+        .from("document_sections")
+        .insert(sectionRows);
+
+      if (sectionError) {
+        console.error(sectionError);
+
+        await supabaseClient
+          .from("document_library")
+          .update({
+            parse_status: "error",
+            parse_error: sectionError.message
+          })
+          .eq("id", insertedDoc.id);
+
+        setAdminStatus(`Chunk insert failed: ${sectionError.message}`);
+        return;
+      }
+    }
+
+    await supabaseClient
+      .from("document_library")
+      .update({
+        parse_status: "complete",
+        parse_error: null
+      })
+      .eq("id", insertedDoc.id);
+
     uploaded += 1;
   }
 
-  setAdminStatus(`${uploaded} file(s) uploaded and indexed`);
+  setAdminStatus(`${uploaded} file(s) uploaded and chunked`);
   docsInput.value = "";
   await loadStoredDocuments();
   await loadAdminFiles();
@@ -528,7 +474,13 @@ function topicType(topic, nfpa, audienceType) {
   if (t.includes("confined")) return "confined-space";
   if (t.includes("rope")) return "rope";
   if (t.includes("swift") || t.includes("water") || t.includes("ice")) return "water";
-  if (t.includes("standpipe") || t.includes("hose") || t.includes("ladder") || t.includes("fire attack") || t.includes("forcible")) return "fireground";
+  if (
+    t.includes("standpipe") ||
+    t.includes("hose") ||
+    t.includes("ladder") ||
+    t.includes("fire attack") ||
+    t.includes("forcible")
+  ) return "fireground";
   if (t.includes("leadership") || t.includes("officer") || nfpa === "NFPA 1021" || audienceType === "Officer") return "officer";
   if (nfpa === "NFPA 1041" || audienceType === "Instructor") return "instruction";
   return "general";
@@ -1175,66 +1127,3 @@ window.onload = function () {
   initButtons();
   initAuth();
 };
-function chunkDocumentText(text) {
-  if (!text) return [];
-
-  const rawParagraphs = text
-    .split(/\n\s*\n+/)
-    .map(p => p.trim())
-    .filter(Boolean);
-
-  const chunks = [];
-  let currentHeading = "";
-
-  for (const para of rawParagraphs) {
-    if (para.length < 40) continue;
-
-    const looksLikeHeading =
-      para.length < 120 &&
-      !para.includes(".") &&
-      para === para.toUpperCase();
-
-    if (looksLikeHeading) {
-      currentHeading = para;
-      continue;
-    }
-
-    chunks.push({
-      page_number: null,
-      heading: currentHeading || null,
-      subheading: null,
-      content: para
-    });
-  }
-
-  return chunks;
-}
-
-function detectSectionType(text) {
-  const lower = text.toLowerCase();
-
-  if (
-    lower.includes("jpr") ||
-    lower.includes("job performance requirement") ||
-    lower.includes("the candidate shall")
-  ) {
-    return "jpr";
-  }
-
-  if (
-    lower.includes("procedure") ||
-    lower.includes("shall") ||
-    lower.includes("step")
-  ) {
-    return "procedure";
-  }
-
-  if (
-    lower.includes("safety") ||
-    lower.includes("hazard")
-  ) {
-    return "safety";
-  }
-
-  return "general";
-}
