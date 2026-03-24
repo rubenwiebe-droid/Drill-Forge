@@ -921,7 +921,7 @@ for (const fluff of fluffPatterns) {
     }
   }
 
-  if (keywordHits === 0) return -999;
+  if (keywordHits < 2) return -999;
 
   if (
   text.includes("perform") ||
