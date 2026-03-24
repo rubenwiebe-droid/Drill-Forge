@@ -238,7 +238,7 @@ async function loadStoredDocuments() {
 
   docs = data.map(row => ({
     name: row.filename,
-    content: (row.extracted_text || "").toLowerCase(),
+    content: row.extracted_text || "",
     storagePath: row.storage_path,
     fileType: row.file_type || ""
   }));
@@ -324,64 +324,6 @@ async function deleteAdminFile(storagePath) {
   setAdminStatus("File deleted");
   await loadStoredDocuments();
   await loadAdminFiles();
-}
-
-function extractRelevant(topic) {
-  const results = [];
-  const t = topic.toLowerCase();
-  const words = t.split(" ").filter(Boolean);
-
-  for (const d of docs) {
-    const name = d.name.toLowerCase();
-    const content = (d.content || "").toLowerCase();
-
-    if (name.includes(t) || content.includes(t)) {
-      results.push(d.name);
-      continue;
-    }
-
-    let score = 0;
-    for (const word of words) {
-      if (name.includes(word)) score += 2;
-      if (content.includes(word)) score += 1;
-    }
-
-    if (score >= 2) {
-      results.push(d.name);
-    }
-  }
-
-  return [...new Set(results)];
-}
-
-function extractJprSnippets(topic) {
-  const t = topic.toLowerCase();
-  const words = t.split(" ").filter(Boolean);
-  const snippets = [];
-
-  for (const d of docs) {
-    const text = d.content || "";
-    if (!text) continue;
-
-    const lines = text.split(/\r?\n/);
-
-    for (const line of lines) {
-      const lower = line.toLowerCase();
-      const mentionsTopic = lower.includes(t) || words.some(w => lower.includes(w));
-      const looksLikeJpr =
-        lower.includes("jpr") ||
-        lower.includes("job performance requirement") ||
-        lower.includes("shall") ||
-        lower.includes("the firefighter shall") ||
-        lower.includes("the candidate shall");
-
-      if (mentionsTopic && looksLikeJpr) {
-        snippets.push(line.trim());
-      }
-    }
-  }
-
-  return [...new Set(snippets)].slice(0, 5);
 }
 
 function durationBlocks(duration) {
@@ -618,7 +560,88 @@ function assignmentItems(topic, nfpa, depth) {
   return items;
 }
 
-function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, refs) {
+function scoreLine(line, topicWords) {
+  const lower = line.toLowerCase();
+  let score = 0;
+
+  for (const word of topicWords) {
+    if (lower.includes(word)) score += 1;
+  }
+
+  if (/^\s*\d+(\.\d+)+\*?/.test(lower)) score += 3;
+  if (lower.includes("jpr")) score += 2;
+  if (lower.includes("job performance requirement")) score += 2;
+  if (lower.includes("shall")) score += 2;
+  if (lower.includes("the firefighter shall")) score += 2;
+  if (lower.includes("the candidate shall")) score += 2;
+
+  return score;
+}
+
+function findExactMatches(topic) {
+  const topicWords = topic.toLowerCase().split(/\s+/).filter(Boolean);
+  const jprMatches = [];
+  const referenceMatches = [];
+
+  for (const doc of docs) {
+    const text = doc.content || "";
+    if (!text) continue;
+
+    const lines = text
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(Boolean);
+
+    for (const line of lines) {
+      const score = scoreLine(line, topicWords);
+      if (score < 2) continue;
+
+      const lower = line.toLowerCase();
+      const looksLikeJpr =
+        /^\s*\d+(\.\d+)+\*?/.test(lower) ||
+        lower.includes("jpr") ||
+        lower.includes("job performance requirement") ||
+        lower.includes("the firefighter shall") ||
+        lower.includes("the candidate shall");
+
+      const item = {
+        filename: doc.name,
+        excerpt: line,
+        score
+      };
+
+      if (looksLikeJpr) {
+        jprMatches.push(item);
+      } else {
+        referenceMatches.push(item);
+      }
+    }
+  }
+
+  jprMatches.sort((a, b) => b.score - a.score);
+  referenceMatches.sort((a, b) => b.score - a.score);
+
+  return {
+    jprs: dedupeMatches(jprMatches).slice(0, 5),
+    references: dedupeMatches(referenceMatches).slice(0, 5)
+  };
+}
+
+function dedupeMatches(items) {
+  const seen = new Set();
+  const out = [];
+
+  for (const item of items) {
+    const key = `${item.filename}::${item.excerpt}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+
+  return out;
+}
+
+function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, matchData) {
   const flags = includeFlags();
   const instructorText = instructor || (currentUser?.email || "TBD");
   const locationText = location || "TBD";
@@ -633,8 +656,6 @@ function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliverySty
   const errors = commonErrors(topic, nfpa, audienceType);
   const corrections = correctiveActions(topic, nfpa, audienceType);
   const evalSteps = evaluationSequence(topic, nfpa, audienceType);
-  const exactJprs = extractJprSnippets(topic);
-  const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
 
   let output = `BRAMPTON FIRE & EMERGENCY SERVICES LESSON PLAN
 
@@ -643,6 +664,9 @@ INSTRUCTOR: ${instructorText}
 SUBJECT: ${topic}
 Location: ${locationText}
 TOTAL TIME: ${duration}
+
+STANDARDS:
+- ${nfpa}
 
 LEARNING OUTCOME(S):
 - The learner will be able to explain the purpose, hazards, and expected performance related to ${topic}.
@@ -667,11 +691,10 @@ ${environment}
 JPR(s):
 `;
 
-    if (exactJprs.length) {
-      output += `${exactJprs.map(x => `- ${x}`).join("\n")}\n`;
+    if (matchData.jprs.length) {
+      output += `${matchData.jprs.map(x => `- ${x.excerpt}`).join("\n")}\n`;
     } else {
-      output += `- ${nfpa} job performance requirements relevant to ${topic}.\n`;
-      output += `- Applicable knowledge, skills, safety controls, and performance expectations tied to the selected topic.\n`;
+      output += `- No exact JPR wording found in uploaded library.\n`;
     }
   }
 
@@ -740,26 +763,31 @@ ${assignmentItems(topic, nfpa, depth).map(x => `- ${x}`).join("\n")}
   if (flags.references) {
     output += `
 REFERENCES:
-${referencesText}
-- ${nfpa}
 `;
+
+    if (matchData.references.length) {
+      output += `${matchData.references.map(x => `- ${x.filename} — "${x.excerpt}"`).join("\n")}\n`;
+    } else {
+      output += `- No exact reference excerpt found in uploaded library.\n`;
+    }
   }
 
   return output.trim();
 }
 
-function buildSkillSheetOutput(topic, nfpa, format, depth, deliveryStyle, audienceType, refs) {
+function buildSkillSheetOutput(topic, nfpa, format, depth, deliveryStyle, audienceType, matchData) {
   const flags = includeFlags();
   const steps = detailedProcedureSteps(topic, deliveryStyle, depth, audienceType, nfpa);
   const errors = commonErrors(topic, nfpa, audienceType);
   const evalSteps = evaluationSequence(topic, nfpa, audienceType);
-  const exactJprs = extractJprSnippets(topic);
-  const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
 
   let output = `BFES JOB PERFORMANCE REQUIREMENT SKILL SHEET
 
-Standard: ${nfpa}
-Title: ${topic}
+Standard:
+- ${nfpa}
+
+Title:
+${topic}
 `;
 
   if (flags.jpr) {
@@ -767,11 +795,10 @@ Title: ${topic}
 JPR:
 `;
 
-    if (exactJprs.length) {
-      output += `${exactJprs.map(x => `- ${x}`).join("\n")}\n`;
+    if (matchData.jprs.length) {
+      output += `${matchData.jprs.map(x => `- ${x.excerpt}`).join("\n")}\n`;
     } else {
-      output += `- ${nfpa} job performance requirements relevant to ${topic}.\n`;
-      output += `- Applicable knowledge, skills, safety controls, and performance expectations tied to the selected topic.\n`;
+      output += `- No exact JPR wording found in uploaded library.\n`;
     }
   }
 
@@ -828,9 +855,13 @@ Instructor Notes:
   if (flags.references) {
     output += `
 REFERENCES:
-${referencesText}
-- ${nfpa}
 `;
+
+    if (matchData.references.length) {
+      output += `${matchData.references.map(x => `- ${x.filename} — "${x.excerpt}"`).join("\n")}\n`;
+    } else {
+      output += `- No exact reference excerpt found in uploaded library.\n`;
+    }
   }
 
   return output.trim();
@@ -859,7 +890,7 @@ function generate() {
       return;
     }
 
-    const refs = docsLoaded ? extractRelevant(topic) : [];
+    const matchData = docsLoaded ? findExactMatches(topic) : { jprs: [], references: [] };
 
     let output = "";
     if (type === "Lesson Plan") {
@@ -873,7 +904,7 @@ function generate() {
         audienceType,
         instructor,
         location,
-        refs
+        matchData
       );
     } else {
       output = buildSkillSheetOutput(
@@ -883,7 +914,7 @@ function generate() {
         depth,
         deliveryStyle,
         audienceType,
-        refs
+        matchData
       );
     }
 
