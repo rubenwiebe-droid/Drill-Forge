@@ -788,7 +788,6 @@ function assignmentItems(topic, nfpa, depth) {
 function scoreLine(line, topic) {
   const lower = line.toLowerCase();
 
-  // ❌ Remove junk / garbage lines
   if (
     lower.includes("this text document") ||
     lower.includes("extracted text") ||
@@ -804,13 +803,11 @@ function scoreLine(line, topic) {
 
   let score = 0;
 
-  // 🔥 THIS IS THE FIX — use topic directly
   if (topic && lower.includes(topic.toLowerCase())) {
     score += 5;
   }
 
-  // JPR indicators
-  if (/^\s*\d+\.\d+\.\d+\b/.test(lower)) score += 3;
+  if (/\b\d+\.\d+\.\d+\b/.test(lower)) score += 3;
   if (lower.includes("jpr")) score += 2;
   if (lower.includes("job performance requirement")) score += 2;
   if (lower.includes("shall")) score += 2;
@@ -820,54 +817,43 @@ function scoreLine(line, topic) {
   return score;
 }
 
-let score = 0;
-
-for (const word of topicWords) {
-  if (lower.includes(word)) score += 1;
-}
-
-// 🔥 MUST BE OUTSIDE THE LOOP
-if (lower.includes("ladder")) score += 3;
-
-if (/^\s*\d+\.\d+\.\d+\b/.test(lower)) score += 3;
-if (lower.includes("jpr")) score += 2;
-if (lower.includes("job performance requirement")) score += 2;
-if (lower.includes("shall")) score += 2;
-if (lower.startsWith("the firefighter shall")) score += 2;
-if (lower.startsWith("the candidate shall")) score += 2;
-
-return score;
-}
- 
 function findExactMatches(topic) {
-  const topicWords = expandTopicWords(topic);
   const jprMatches = [];
   const referenceMatches = [];
- 
+
   for (const doc of docs) {
     const text = doc.content || "";
     if (!text) continue;
- 
+
     const lines = text
       .split(/\r?\n/)
       .map(l => l.trim())
       .filter(Boolean);
- 
+
     for (const line of lines) {
       const lower = line.toLowerCase();
-      const score = scoreLine(line, topicWords);
- 
-      if (score < 3) continue;
- 
-      const looksLikeJpr =
-  /\b\d+\.\d+\.\d+\b/.test(lower);
- 
+
+      if (
+        line.length > 300 ||
+        lower.includes("copyright") ||
+        lower.includes("all rights reserved") ||
+        lower.includes("national fire protection association") ||
+        lower.includes("notice and disclaimer")
+      ) {
+        continue;
+      }
+
+      const score = scoreLine(line, topic);
+      if (score < 2) continue;
+
+      const looksLikeJpr = /\b\d+\.\d+\.\d+\b/.test(lower);
+
       const item = {
         filename: doc.name,
-        excerpt: line,
+        excerpt: line.replace(/^[-•\s]+/, "").trim(),
         score
       };
- 
+
       if (looksLikeJpr) {
         jprMatches.push(item);
       } else {
@@ -875,18 +861,18 @@ function findExactMatches(topic) {
       }
     }
   }
- 
+
   const dedupedJprs = dedupeMatches(jprMatches);
   const dedupedRefs = dedupeMatches(referenceMatches);
- 
-  const finalJprs = dedupedJprs
-  .filter(item => item.score >= 2)
-  .slice(0, 6);
 
-const finalRefs = dedupedRefs
-  .filter(item => item.score >= 4)
-  .slice(0, 6);
- 
+  const finalJprs = dedupedJprs
+    .filter(item => item.score >= 2)
+    .slice(0, 6);
+
+  const finalRefs = dedupedRefs
+    .filter(item => item.score >= 4)
+    .slice(0, 6);
+
   return {
     jprs: finalJprs,
     references: finalRefs
