@@ -701,14 +701,13 @@ function assignmentItems(topic, nfpa, depth) {
 function scoreLine(line, topicWords) {
   const lower = line.toLowerCase();
 
-  // FILTER OUT GARBAGE TEXT
   if (
     lower.includes("this text document") ||
     lower.includes("extracted text") ||
     lower.includes("includes the key") ||
     lower.includes("note:")
   ) {
-    return -1; // VERY IMPORTANT: force it to be ignored
+    return -1;
   }
 
   let score = 0;
@@ -717,8 +716,6 @@ function scoreLine(line, topicWords) {
     if (lower.includes(word)) score += 1;
   }
 
-  return score;
-}
   if (/^\s*\d+(\.\d+)+\*?/.test(lower)) score += 3;
   if (lower.includes("jpr")) score += 2;
   if (lower.includes("job performance requirement")) score += 2;
@@ -728,7 +725,6 @@ function scoreLine(line, topicWords) {
 
   return score;
 }
-
 function findExactMatches(topic) {
   const topicWords = topic.toLowerCase().split(/\s+/).filter(Boolean);
   const jprMatches = [];
