@@ -178,12 +178,7 @@ async function uploadDocuments() {
   const docsInput = byId("docs");
   const files = docsInput ? docsInput.files : null;
 
-  if (!files || !files.length) {
-    setAdminStatus("Choose at least one file");
-    return;
-  }
-
-  setAdminStatus("Uploading and indexing...");
+    setAdminStatus("Uploading and indexing...");
 
   let uploaded = 0;
 
