@@ -1262,6 +1262,12 @@ REFERENCES:
 
   const refs = [];
 
+  if (matchData.references.length) {
+    matchData.references.forEach(ref => {
+      refs.push(cleanReferenceName(ref.filename));
+    });
+  }
+
   if (matchData.jprs.length) {
     matchData.jprs.forEach(jpr => {
       const codeMatch = jpr.excerpt.match(/\d+\.\d+\.\d+/);
@@ -1270,18 +1276,6 @@ REFERENCES:
     });
   } else {
     refs.push(nfpa);
-  }
-
-  if (matchData.references.length) {
-    matchData.references.forEach(ref => {
-      const cleanName = ref.filename
-        .replace(/[_+]/g, " ")
-        .replace(/\.txt$/i, "")
-        .replace(/\.pdf$/i, "")
-        .trim();
-
-      refs.push(cleanName);
-    });
   }
 
   const uniqueRefs = [...new Set(refs)];
