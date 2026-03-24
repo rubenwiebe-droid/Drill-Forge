@@ -881,14 +881,14 @@ function findExactMatches(topic) {
       const lower = line.toLowerCase();
 
       if (
-        line.length > 400 ||
-        lower.includes("copyright") ||
-        lower.includes("all rights reserved") ||
-        lower.includes("national fire protection association") ||
-        lower.includes("notice and disclaimer")
-      ) {
-        continue;
-      }
+  lower.includes("copyright") ||
+  lower.includes("all rights reserved") ||
+  lower.includes("national fire protection association") ||
+  lower.includes("notice and disclaimer")
+) {
+        
+  continue;
+}
 
       const score = scoreLine(line, topic);
       if (score < 2) continue;
