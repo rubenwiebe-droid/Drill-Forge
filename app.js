@@ -916,9 +916,9 @@ function findExactMatches(topic) {
     .filter(item => item.score >= 2)
     .slice(0, 4);
 
-  const finalRefs = dedupedRefs
-    .filter(item => item.score >= 5)
-    .slice(0, 5);
+const finalRefs = dedupedRefs
+  .filter(item => item.score >= 2)
+  .slice(0, 6);
 
   return {
     jprs: finalJprs,
