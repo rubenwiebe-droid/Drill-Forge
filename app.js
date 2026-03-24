@@ -1067,6 +1067,72 @@ const jprText = sortedJprs[0].excerpt.toLowerCase();
   return steps;
 }
 
+function buildUploadedContentSteps(topicLabel, matchData, fallbackSteps) {
+  if (!matchData || !matchData.teaching || !matchData.teaching.length) {
+    return fallbackSteps;
+  }
+
+  const steps = [
+    `Review the purpose, scope, and expected outcome for ${topicLabel}.`,
+    "Confirm instructor assignments, learner grouping, and available resources.",
+    "Complete a safety briefing before any demonstration or practical activity begins."
+  ];
+
+  const contentSteps = matchData.teaching
+    .slice(0, 4)
+    .map(item => item.excerpt)
+    .filter(Boolean);
+
+  if (!contentSteps.length) {
+    return fallbackSteps;
+  }
+
+  for (const step of contentSteps) {
+    steps.push(step.charAt(0).toUpperCase() + step.slice(1));
+  }
+
+  steps.push("Connect the uploaded reference material to the practical task, demonstration, or learner evaluation.");
+  return steps;
+}
+
+function buildSafetyItems(matchData) {
+  if (matchData?.safety?.length) {
+    return matchData.safety.slice(0, 4).map(item => item.excerpt);
+  }
+
+  return [
+    "Conduct a safety briefing before beginning any demonstration or practical activity.",
+    "Confirm PPE, equipment readiness, control zones, communications, and stop-work authority.",
+    "Reassess hazards continuously as the lesson progresses.",
+    "Stop the evolution immediately if unsafe conditions, unsafe acts, or loss of control occur."
+  ];
+}
+
+function buildInstructorNotes(matchData) {
+  const notes = [];
+
+  if (matchData?.teaching?.length) {
+    matchData.teaching.slice(0, 3).forEach(item => {
+      notes.push(`Uploaded reference: ${item.excerpt}`);
+    });
+  }
+
+  if (matchData?.safety?.length) {
+    matchData.safety.slice(0, 2).forEach(item => {
+      notes.push(`Safety emphasis from uploaded material: ${item.excerpt}`);
+    });
+  }
+
+  if (!notes.length) {
+    notes.push("Match the pace of the lesson to learner experience, available equipment, and training environment.");
+    notes.push("Keep the instruction focused on the selected topic and avoid drifting into unrelated material.");
+    notes.push("Reinforce why each step is completed in that order and what risk is created when steps are skipped.");
+    notes.push("Use coaching pauses throughout the lesson to correct errors before evaluation.");
+  }
+
+  return notes;
+}
+
 function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, matchData) {
   const flags = includeFlags();
   const topicLabel = toTitleCase(topic);
