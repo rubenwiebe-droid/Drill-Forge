@@ -858,12 +858,12 @@ function findExactMatches(topic) {
   const dedupedRefs = dedupeMatches(referenceMatches);
  
   const finalJprs = dedupedJprs
-    .filter(item => item.score >= 4)
-    .slice(0, 6);
- 
-  const finalRefs = dedupedRefs
-    .filter(item => item.score >= 4)
-    .slice(0, 6);
+  .filter(item => item.score >= 2)
+  .slice(0, 6);
+
+const finalRefs = dedupedRefs
+  .filter(item => item.score >= 4)
+  .slice(0, 6);
  
   return {
     jprs: finalJprs,
