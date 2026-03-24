@@ -137,6 +137,22 @@ async function signOutUser() {
   }
 }
 
+async function extractTextFromFile(file) {
+  const lower = file.name.toLowerCase();
+
+  if (lower.endsWith(".txt") || lower.endsWith(".md")) {
+    return await file.text();
+  }
+
+  if (lower.endsWith(".docx")) {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await window.mammoth.extractRawText({ arrayBuffer });
+    return result.value || "";
+  }
+
+  return "";
+}
+
 async function uploadDocuments() {
   if (!currentUser || !isAdmin(currentUser)) {
     setAdminStatus("Admin only");
@@ -151,36 +167,61 @@ async function uploadDocuments() {
     return;
   }
 
-  setAdminStatus("Uploading...");
+  setAdminStatus("Uploading and indexing...");
 
   let uploaded = 0;
 
   for (const file of files) {
     const path = `shared/${Date.now()}-${file.name}`;
 
-    const { error } = await supabaseClient.storage
+    const { error: uploadError } = await supabaseClient.storage
       .from("reference-docs")
       .upload(path, file, { upsert: false });
 
-    if (error) {
-      console.error(error);
-      setAdminStatus(`Upload failed: ${error.message}`);
+    if (uploadError) {
+      console.error(uploadError);
+      setAdminStatus(`Upload failed: ${uploadError.message}`);
+      return;
+    }
+
+    let extractedText = "";
+    try {
+      extractedText = await extractTextFromFile(file);
+    } catch (extractErr) {
+      console.error(extractErr);
+      extractedText = "";
+    }
+
+    const { error: dbError } = await supabaseClient
+      .from("document_library")
+      .insert({
+        storage_path: path,
+        filename: file.name,
+        file_type: file.type || "",
+        extracted_text: extractedText,
+        uploaded_by: currentUser.id
+      });
+
+    if (dbError) {
+      console.error(dbError);
+      setAdminStatus(`Indexed file failed: ${dbError.message}`);
       return;
     }
 
     uploaded += 1;
   }
 
-  setAdminStatus(`${uploaded} file(s) uploaded`);
+  setAdminStatus(`${uploaded} file(s) uploaded and indexed`);
   docsInput.value = "";
   await loadStoredDocuments();
   await loadAdminFiles();
 }
 
 async function loadStoredDocuments() {
-  const { data, error } = await supabaseClient.storage
-    .from("reference-docs")
-    .list("shared", { limit: 100 });
+  const { data, error } = await supabaseClient
+    .from("document_library")
+    .select("filename, extracted_text, storage_path, file_type, uploaded_at")
+    .order("uploaded_at", { ascending: false });
 
   if (error) {
     console.error(error);
@@ -195,9 +236,11 @@ async function loadStoredDocuments() {
     return;
   }
 
-  docs = data.map(file => ({
-    name: file.name,
-    content: file.name.toLowerCase()
+  docs = data.map(row => ({
+    name: row.filename,
+    content: (row.extracted_text || "").toLowerCase(),
+    storagePath: row.storage_path,
+    fileType: row.file_type || ""
   }));
 
   docsLoaded = true;
@@ -211,9 +254,10 @@ async function loadAdminFiles() {
 
   listEl.innerHTML = "Loading...";
 
-  const { data, error } = await supabaseClient.storage
-    .from("reference-docs")
-    .list("shared", { limit: 100 });
+  const { data, error } = await supabaseClient
+    .from("document_library")
+    .select("filename, storage_path, uploaded_at")
+    .order("uploaded_at", { ascending: false });
 
   if (error) {
     console.error(error);
@@ -233,13 +277,13 @@ async function loadAdminFiles() {
     row.className = "file-row";
 
     const name = document.createElement("span");
-    name.textContent = file.name;
+    name.textContent = file.filename;
 
     const btn = document.createElement("button");
     btn.textContent = "Delete";
     btn.type = "button";
     btn.onclick = async function () {
-      await deleteAdminFile(file.name);
+      await deleteAdminFile(file.storage_path);
     };
 
     row.appendChild(name);
@@ -248,7 +292,7 @@ async function loadAdminFiles() {
   });
 }
 
-async function deleteAdminFile(fileName) {
+async function deleteAdminFile(storagePath) {
   if (!currentUser || !isAdmin(currentUser)) {
     setAdminStatus("Admin only");
     return;
@@ -256,15 +300,24 @@ async function deleteAdminFile(fileName) {
 
   setAdminStatus("Deleting...");
 
-  const path = `shared/${fileName}`;
-
-  const { error } = await supabaseClient.storage
+  const { error: storageError } = await supabaseClient.storage
     .from("reference-docs")
-    .remove([path]);
+    .remove([storagePath]);
 
-  if (error) {
-    console.error(error);
-    setAdminStatus(`Delete failed: ${error.message}`);
+  if (storageError) {
+    console.error(storageError);
+    setAdminStatus(`Delete failed: ${storageError.message}`);
+    return;
+  }
+
+  const { error: dbError } = await supabaseClient
+    .from("document_library")
+    .delete()
+    .eq("storage_path", storagePath);
+
+  if (dbError) {
+    console.error(dbError);
+    setAdminStatus(`Library delete failed: ${dbError.message}`);
     return;
   }
 
@@ -276,23 +329,59 @@ async function deleteAdminFile(fileName) {
 function extractRelevant(topic) {
   const results = [];
   const t = topic.toLowerCase();
+  const words = t.split(" ").filter(Boolean);
 
   for (const d of docs) {
-    const n = d.name.toLowerCase();
+    const name = d.name.toLowerCase();
+    const content = (d.content || "").toLowerCase();
 
-    if (n.includes(t)) {
+    if (name.includes(t) || content.includes(t)) {
       results.push(d.name);
       continue;
     }
 
-    const words = t.split(" ").filter(Boolean);
-    const matchedWords = words.filter(w => n.includes(w));
-    if (matchedWords.length >= 1) {
+    let score = 0;
+    for (const word of words) {
+      if (name.includes(word)) score += 2;
+      if (content.includes(word)) score += 1;
+    }
+
+    if (score >= 2) {
       results.push(d.name);
     }
   }
 
   return [...new Set(results)];
+}
+
+function extractJprSnippets(topic) {
+  const t = topic.toLowerCase();
+  const words = t.split(" ").filter(Boolean);
+  const snippets = [];
+
+  for (const d of docs) {
+    const text = d.content || "";
+    if (!text) continue;
+
+    const lines = text.split(/\r?\n/);
+
+    for (const line of lines) {
+      const lower = line.toLowerCase();
+      const mentionsTopic = lower.includes(t) || words.some(w => lower.includes(w));
+      const looksLikeJpr =
+        lower.includes("jpr") ||
+        lower.includes("job performance requirement") ||
+        lower.includes("shall") ||
+        lower.includes("the firefighter shall") ||
+        lower.includes("the candidate shall");
+
+      if (mentionsTopic && looksLikeJpr) {
+        snippets.push(line.trim());
+      }
+    }
+  }
+
+  return [...new Set(snippets)].slice(0, 5);
 }
 
 function durationBlocks(duration) {
@@ -544,6 +633,7 @@ function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliverySty
   const errors = commonErrors(topic, nfpa, audienceType);
   const corrections = correctiveActions(topic, nfpa, audienceType);
   const evalSteps = evaluationSequence(topic, nfpa, audienceType);
+  const exactJprs = extractJprSnippets(topic);
   const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
 
   let output = `BRAMPTON FIRE & EMERGENCY SERVICES LESSON PLAN
@@ -575,9 +665,14 @@ ${environment}
   if (flags.jpr) {
     output += `
 JPR(s):
-- ${nfpa} job performance requirements relevant to ${topic}.
-- Applicable knowledge, skills, safety controls, and performance expectations tied to the selected topic.
 `;
+
+    if (exactJprs.length) {
+      output += `${exactJprs.map(x => `- ${x}`).join("\n")}\n`;
+    } else {
+      output += `- ${nfpa} job performance requirements relevant to ${topic}.\n`;
+      output += `- Applicable knowledge, skills, safety controls, and performance expectations tied to the selected topic.\n`;
+    }
   }
 
   output += `
@@ -658,6 +753,7 @@ function buildSkillSheetOutput(topic, nfpa, format, depth, deliveryStyle, audien
   const steps = detailedProcedureSteps(topic, deliveryStyle, depth, audienceType, nfpa);
   const errors = commonErrors(topic, nfpa, audienceType);
   const evalSteps = evaluationSequence(topic, nfpa, audienceType);
+  const exactJprs = extractJprSnippets(topic);
   const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
 
   let output = `BFES JOB PERFORMANCE REQUIREMENT SKILL SHEET
@@ -669,9 +765,14 @@ Title: ${topic}
   if (flags.jpr) {
     output += `
 JPR:
-- ${nfpa} job performance requirements relevant to ${topic}.
-- Applicable knowledge, skills, safety controls, and performance expectations tied to the selected topic.
 `;
+
+    if (exactJprs.length) {
+      output += `${exactJprs.map(x => `- ${x}`).join("\n")}\n`;
+    } else {
+      output += `- ${nfpa} job performance requirements relevant to ${topic}.\n`;
+      output += `- Applicable knowledge, skills, safety controls, and performance expectations tied to the selected topic.\n`;
+    }
   }
 
   output += `
