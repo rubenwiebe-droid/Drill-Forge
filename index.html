@@ -47,7 +47,7 @@
         </select>
       </div>
 
-      <div class="grid-two">
+      <div class="grid-three">
         <select id="type">
           <option>Lesson Plan</option>
           <option>Skill Sheet</option>
@@ -57,9 +57,42 @@
           <option>Simple</option>
           <option>Detailed</option>
         </select>
+
+        <select id="outputDepth">
+          <option>Basic</option>
+          <option selected>Standard</option>
+          <option>Detailed</option>
+          <option>Very Detailed</option>
+        </select>
+      </div>
+
+      <div class="grid-two">
+        <select id="deliveryStyle">
+          <option>Classroom</option>
+          <option>Practical</option>
+          <option selected>Mixed</option>
+        </select>
+
+        <select id="audienceType">
+          <option selected>Firefighter</option>
+          <option>Officer</option>
+          <option>Instructor</option>
+        </select>
       </div>
 
       <input id="topic" placeholder="Enter topic">
+
+      <div class="options-box">
+        <h3>Include in Output</h3>
+        <div class="checks-grid">
+          <label><input type="checkbox" id="includeJpr" checked> JPR wording</label>
+          <label><input type="checkbox" id="includeSafety" checked> Safety considerations</label>
+          <label><input type="checkbox" id="includeNotes" checked> Instructor notes</label>
+          <label><input type="checkbox" id="includeEval" checked> Evaluation criteria</label>
+          <label><input type="checkbox" id="includeAssignment"> Assignment</label>
+          <label><input type="checkbox" id="includeReferences" checked> References</label>
+        </div>
+      </div>
 
       <button id="generateBtn" type="button">Generate</button>
       <button id="exportPdfBtn" type="button">Export PDF</button>
