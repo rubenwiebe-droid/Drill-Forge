@@ -746,12 +746,10 @@ function findExactMatches(topic) {
       const score = scoreLine(line, topicWords);
       if (score < 2) continue;
 
-      const looksLikeJpr =
-        /^\s*\d+(\.\d+)+\*?/.test(lower) ||
-        lower.includes("jpr") ||
-        lower.includes("job performance requirement") ||
-        lower.includes("the firefighter shall") ||
-        lower.includes("the candidate shall");
+const looksLikeJpr =
+  /^\s*\d+(\.\d+)+/.test(lower) ||  // strict NFPA numbering (4.3.6 etc)
+  lower.startsWith("the firefighter shall") ||
+  lower.startsWith("the candidate shall");
 
       const item = {
         filename: doc.name,
