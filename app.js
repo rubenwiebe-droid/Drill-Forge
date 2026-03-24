@@ -940,6 +940,15 @@ function dedupeMatches(items) {
   return out;
 }
 
+function toTitleCase(text) {
+  return text
+    .toLowerCase()
+    .split(" ")
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, matchData) {
   const flags = includeFlags();
   const instructorText = instructor || (currentUser?.email || "TBD");
