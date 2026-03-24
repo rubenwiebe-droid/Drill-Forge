@@ -868,6 +868,11 @@ function scoreSection(section, topic) {
   const text = normalizeText(section.content);
   if (!text || text.length < 40) return -999;
 
+  if (/^\d+\./.test(text)) score += 8; // "1. Do this"
+if (text.includes("step")) score += 5;
+if (text.includes("procedure")) score += 5;
+if (text.includes("sequence")) score += 5;
+
   const fluffPatterns = [
   "this is why",
   "you must define",
