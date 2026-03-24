@@ -1415,7 +1415,9 @@ function generate() {
       return;
     }
 
-    const matchData = docsLoaded ? findExactMatches(topic) : { jprs: [], references: [] };
+    const matchData = docsLoaded
+  ? findExactMatches(topic)
+  : { jprs: [], teaching: [], safety: [], references: [] };
 
     let output = "";
     if (type === "Lesson Plan") {
