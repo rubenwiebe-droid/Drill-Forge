@@ -263,8 +263,6 @@ async function uploadDocuments() {
   docsInput.value = "";
 }
 
-  setAdminStatus("Uploading and indexing...");
-
   let uploaded = 0;
 
   for (const file of files) {
