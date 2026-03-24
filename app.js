@@ -364,7 +364,23 @@ async function uploadDocuments() {
 async function loadStoredDocuments() {
   const { data, error } = await supabaseClient
     .from("document_library")
-    .select("filename, extracted_text, storage_path, file_type, uploaded_at")
+    .select(`
+      id,
+      filename,
+      extracted_text,
+      storage_path,
+      file_type,
+      uploaded_at,
+      document_sections (
+        id,
+        heading,
+        subheading,
+        section_type,
+        chunk_index,
+        content,
+        content_clean
+      )
+    `)
     .order("uploaded_at", { ascending: false });
 
   if (error) {
@@ -381,15 +397,18 @@ async function loadStoredDocuments() {
   }
 
   docs = data.map(row => ({
+    id: row.id,
     name: row.filename,
     content: row.extracted_text || "",
     storagePath: row.storage_path,
-    fileType: row.file_type || ""
+    fileType: row.file_type || "",
+    sections: (row.document_sections || []).sort((a, b) => {
+      return (a.chunk_index ?? 0) - (b.chunk_index ?? 0);
+    })
   }));
 
   docsLoaded = true;
 }
-
 async function loadAdminFiles() {
   if (!currentUser || !isAdmin(currentUser)) return;
 
