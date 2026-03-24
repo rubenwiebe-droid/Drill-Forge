@@ -949,6 +949,47 @@ function toTitleCase(text) {
     .join(" ");
 }
 
+function buildJprDrivenSteps(topicLabel, matchData, fallbackSteps) {
+  if (!matchData || !matchData.jprs || !matchData.jprs.length) {
+    return fallbackSteps;
+  }
+
+  const jprText = matchData.jprs.map(x => x.excerpt.toLowerCase()).join(" ");
+
+  const steps = [
+    `Review the purpose, scope, and expected outcome for ${topicLabel}.`,
+    "Confirm instructor assignments, learner grouping, and available resources.",
+    "Complete a safety briefing before any demonstration or practical activity begins.",
+    "Confirm all equipment, PPE, props, and reference material are ready for use."
+  ];
+
+  if (jprText.includes("search and rescue")) {
+    steps.push("Identify the search objective, likely victim locations, and the structural or fire conditions that may affect survivability.");
+    steps.push("Assign search team roles, entry point, orientation method, and communication expectations before entry.");
+    steps.push("Demonstrate the selected search pattern and maintain crew integrity, orientation, and accountability throughout the evolution.");
+    steps.push("Demonstrate victim contact, communication of findings, and victim removal priorities where applicable.");
+    steps.push("Require learners to complete the search sequence under controlled conditions while maintaining orientation and team integrity.");
+    steps.push("Evaluate search technique, room coverage, communication, accountability, and overall hazard awareness.");
+  } else if (jprText.includes("ground ladders") || jprText.includes("descend ground ladders")) {
+    steps.push("Identify ladder types, parts, and intended use before practical work begins.");
+    steps.push("Inspect each ladder for defects, damage, and serviceability before placing it in service.");
+    steps.push("Select the correct ladder for the target height, access point, and task objective.");
+    steps.push("Demonstrate the correct carry, raise, placement, climbing, and descent sequence while maintaining control of the ladder.");
+    steps.push("For extension ladders, extend to the required working height and verify that the fly is locked.");
+    steps.push("Require learners to repeat the full sequence under supervision and evaluate ladder control, angle, placement, and climbing technique.");
+  } else if (jprText.includes("vertical ventilation") || jprText.includes("horizontal ventilation")) {
+    steps.push("Identify the ventilation objective, selected method, and coordination requirements before beginning the evolution.");
+    steps.push("Assign team roles, tools, positioning, and communications with command and suppression crews.");
+    steps.push("Demonstrate the correct opening sequence and maintain control of hazards, timing, and work area safety.");
+    steps.push("Require learners to perform the ventilation task under supervision while maintaining coordination and accountability.");
+    steps.push("Evaluate tool use, positioning, timing, safety, and communication throughout the evolution.");
+  } else {
+    return fallbackSteps;
+  }
+
+  return steps;
+}
+
 function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, matchData) {
   const flags = includeFlags();
   const topicLabel = toTitleCase(topic);
