@@ -143,7 +143,23 @@ async function extractTextFromFile(file) {
   if (lower.endsWith(".txt") || lower.endsWith(".md")) {
     return await file.text();
   }
+  if (file.type === "application/pdf" || lower.endsWith(".pdf")) {
+    const arrayBuffer = await file.arrayBuffer();
 
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    let fullText = "";
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+
+      const strings = content.items.map(item => item.str).join(" ");
+      fullText += strings + "\n";
+    }
+
+    return fullText;
+  }
   if (lower.endsWith(".docx")) {
     const arrayBuffer = await file.arrayBuffer();
     const result = await window.mammoth.extractRawText({ arrayBuffer });
