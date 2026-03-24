@@ -734,10 +734,21 @@ function findExactMatches(topic) {
       .filter(Boolean);
 
     for (const line of lines) {
+      const lower = line.toLowerCase();
+
+      if (
+        line.length > 300 ||
+        lower.includes("copyright") ||
+        lower.includes("all rights reserved") ||
+        lower.includes("national fire protection association") ||
+        lower.includes("notice and disclaimer")
+      ) {
+        continue;
+      }
+
       const score = scoreLine(line, topicWords);
       if (score < 2) continue;
 
-      const lower = line.toLowerCase();
       const looksLikeJpr =
         /^\s*\d+(\.\d+)+\*?/.test(lower) ||
         lower.includes("jpr") ||
@@ -759,12 +770,20 @@ function findExactMatches(topic) {
     }
   }
 
-  jprMatches.sort((a, b) => b.score - a.score);
-  referenceMatches.sort((a, b) => b.score - a.score);
+  const dedupedJprs = dedupeMatches(jprMatches);
+  const dedupedRefs = dedupeMatches(referenceMatches);
+
+  const finalJprs = dedupedJprs
+    .filter(item => item.score >= 3)
+    .slice(0, 6);
+
+  const finalRefs = dedupedRefs
+    .filter(item => item.score >= 4)
+    .slice(0, 5);
 
   return {
-    jprs: dedupeMatches(jprMatches).slice(0, 5),
-    references: dedupeMatches(referenceMatches).slice(0, 5)
+    jprs: finalJprs,
+    references: finalRefs
   };
 }
 
