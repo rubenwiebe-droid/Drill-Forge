@@ -788,33 +788,36 @@ function assignmentItems(topic, nfpa, depth) {
 function scoreLine(line, topicWords) {
   const lower = line.toLowerCase();
  
-  if (
-    lower.includes("this text document") ||
-    lower.includes("extracted text") ||
-    lower.includes("includes the key") ||
-    lower.includes("note:") ||
-    lower.includes("copyright") ||
-    lower.includes("all rights reserved") ||
-    lower.includes("national fire protection association") ||
-    lower.includes("notice and disclaimer")
-  ) {
-    return -1;
-  }
- 
-  let score = 0;
- 
-  for (const word of topicWords) {
-    if (lower.includes(word)) score += 1;
-  }
- 
-  if (/^\s*\d+\.\d+\.\d+\b/.test(lower)) score += 3;
-  if (lower.includes("jpr")) score += 2;
-  if (lower.includes("job performance requirement")) score += 2;
-  if (lower.includes("shall")) score += 2;
-  if (lower.startsWith("the firefighter shall")) score += 2;
-  if (lower.startsWith("the candidate shall")) score += 2;
- 
-  return score;
+ if (
+  lower.includes("this text document") ||
+  lower.includes("extracted text") ||
+  lower.includes("includes the key") ||
+  lower.includes("note:") ||
+  lower.includes("copyright") ||
+  lower.includes("all rights reserved") ||
+  lower.includes("national fire protection association") ||
+  lower.includes("notice and disclaimer")
+) {
+  return -1;
+}
+
+let score = 0;
+
+for (const word of topicWords) {
+  if (lower.includes(word)) score += 1;
+}
+
+// 🔥 MUST BE OUTSIDE THE LOOP
+if (lower.includes("ladder")) score += 3;
+
+if (/^\s*\d+\.\d+\.\d+\b/.test(lower)) score += 3;
+if (lower.includes("jpr")) score += 2;
+if (lower.includes("job performance requirement")) score += 2;
+if (lower.includes("shall")) score += 2;
+if (lower.startsWith("the firefighter shall")) score += 2;
+if (lower.startsWith("the candidate shall")) score += 2;
+
+return score;
 }
  
 function findExactMatches(topic) {
