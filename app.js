@@ -143,9 +143,9 @@ async function extractTextFromFile(file) {
   if (lower.endsWith(".txt") || lower.endsWith(".md")) {
     return await file.text();
   }
+
   if (file.type === "application/pdf" || lower.endsWith(".pdf")) {
     const arrayBuffer = await file.arrayBuffer();
-
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
     let fullText = "";
@@ -153,36 +153,17 @@ async function extractTextFromFile(file) {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-
       const strings = content.items.map(item => item.str).join(" ");
       fullText += strings + "\n";
     }
 
     return fullText;
   }
+
   if (lower.endsWith(".docx")) {
     const arrayBuffer = await file.arrayBuffer();
     const result = await window.mammoth.extractRawText({ arrayBuffer });
     return result.value || "";
-  }
-
-  if (lower.endsWith(".pdf")) {
-    if (!window.pdfjsLib) {
-      throw new Error("pdfjsLib failed to load");
-    }
-
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = "";
-
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(" ");
-      fullText += pageText + "\n\n";
-    }
-
-    return fullText;
   }
 
   return "";
