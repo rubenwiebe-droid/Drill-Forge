@@ -1127,24 +1127,37 @@ ${assignmentItems(topicLabel, nfpa, depth).map(x => `- ${x}`).join("\n")}
 `;
   }
 
-  if (flags.references) {
+if (flags.references) {
   output += `
 REFERENCES:
 `;
 
+  const refs = [];
+
   if (matchData.jprs.length) {
-    const refs = matchData.jprs.map(jpr => {
+    matchData.jprs.forEach(jpr => {
       const codeMatch = jpr.excerpt.match(/\d+\.\d+\.\d+/);
       const code = codeMatch ? codeMatch[0] : "Unknown Section";
-      return `- ${nfpa} – Section ${code}`;
+      refs.push(`${nfpa} – Section ${code}`);
     });
-
-    const uniqueRefs = [...new Set(refs)];
-
-    output += uniqueRefs.join("\n") + "\n";
   } else {
-    output += `- ${nfpa}\n`;
+    refs.push(nfpa);
   }
+
+  if (matchData.references.length) {
+    matchData.references.forEach(ref => {
+      const cleanName = ref.filename
+        .replace(/[_+]/g, " ")
+        .replace(/\.txt$/i, "")
+        .replace(/\.pdf$/i, "")
+        .trim();
+
+      refs.push(cleanName);
+    });
+  }
+
+  const uniqueRefs = [...new Set(refs)];
+  output += uniqueRefs.map(x => `- ${x}`).join("\n") + "\n";
 }
 
   return output.trim();
