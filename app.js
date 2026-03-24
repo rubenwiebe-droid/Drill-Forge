@@ -40,6 +40,22 @@ function todayString() {
   });
 }
 
+function safeChecked(id, fallback = false) {
+  const el = byId(id);
+  return el ? el.checked : fallback;
+}
+
+function includeFlags() {
+  return {
+    jpr: safeChecked("includeJpr", true),
+    safety: safeChecked("includeSafety", true),
+    notes: safeChecked("includeNotes", true),
+    eval: safeChecked("includeEval", true),
+    assignment: safeChecked("includeAssignment", false),
+    references: safeChecked("includeReferences", true)
+  };
+}
+
 function updateAuthUI(user) {
   currentUser = user;
 
@@ -127,8 +143,10 @@ async function uploadDocuments() {
     return;
   }
 
-  const files = byId("docs").files;
-  if (!files.length) {
+  const docsInput = byId("docs");
+  const files = docsInput ? docsInput.files : null;
+
+  if (!files || !files.length) {
     setAdminStatus("Choose at least one file");
     return;
   }
@@ -154,7 +172,7 @@ async function uploadDocuments() {
   }
 
   setAdminStatus(`${uploaded} file(s) uploaded`);
-  byId("docs").value = "";
+  docsInput.value = "";
   await loadStoredDocuments();
   await loadAdminFiles();
 }
@@ -261,6 +279,7 @@ function extractRelevant(topic) {
 
   for (const d of docs) {
     const n = d.name.toLowerCase();
+
     if (n.includes(t)) {
       results.push(d.name);
       continue;
@@ -274,22 +293,6 @@ function extractRelevant(topic) {
   }
 
   return [...new Set(results)];
-}
-
-function safeChecked(id) {
-  const el = byId(id);
-  return el ? el.checked : false;
-}
-
-function includeFlags() {
-  return {
-    jpr: safeChecked("includeJpr"),
-    safety: safeChecked("includeSafety"),
-    notes: safeChecked("includeNotes"),
-    eval: safeChecked("includeEval"),
-    assignment: safeChecked("includeAssignment"),
-    references: safeChecked("includeReferences")
-  };
 }
 
 function durationBlocks(duration) {
@@ -315,7 +318,7 @@ function topicType(topic, nfpa, audienceType) {
   return "general";
 }
 
-function detailedProcedureSteps(topic, type, deliveryStyle, depth, audienceType, nfpa) {
+function detailedProcedureSteps(topic, deliveryStyle, depth, audienceType, nfpa) {
   const kind = topicType(topic, nfpa, audienceType);
 
   let steps = [
@@ -537,7 +540,7 @@ function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliverySty
       ? "Simulated / Controlled"
       : "Mixed / Controlled";
 
-  const procedureSteps = detailedProcedureSteps(topic, "Lesson Plan", deliveryStyle, depth, audienceType, nfpa);
+  const procedureSteps = detailedProcedureSteps(topic, deliveryStyle, depth, audienceType, nfpa);
   const errors = commonErrors(topic, nfpa, audienceType);
   const corrections = correctiveActions(topic, nfpa, audienceType);
   const evalSteps = evaluationSequence(topic, nfpa, audienceType);
@@ -652,7 +655,7 @@ ${referencesText}
 
 function buildSkillSheetOutput(topic, nfpa, format, depth, deliveryStyle, audienceType, refs) {
   const flags = includeFlags();
-  const steps = detailedProcedureSteps(topic, "Skill Sheet", deliveryStyle, depth, audienceType, nfpa);
+  const steps = detailedProcedureSteps(topic, deliveryStyle, depth, audienceType, nfpa);
   const errors = commonErrors(topic, nfpa, audienceType);
   const evalSteps = evaluationSequence(topic, nfpa, audienceType);
   const referencesText = refs.length ? refs.map(r => `- ${r}`).join("\n") : "- No uploaded reference documents matched";
@@ -790,9 +793,6 @@ function generate() {
   }
 }
 
-  byId("output").textContent = output;
-}
-
 function exportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -809,12 +809,19 @@ function exportPDF() {
 }
 
 function initButtons() {
-  byId("signUpBtn").addEventListener("click", signUp);
-  byId("signInBtn").addEventListener("click", signIn);
-  byId("signOutBtn").addEventListener("click", signOutUser);
-  byId("generateBtn").addEventListener("click", generate);
-  byId("exportPdfBtn").addEventListener("click", exportPDF);
-  byId("uploadDocsBtn").addEventListener("click", uploadDocuments);
+  const signUpBtn = byId("signUpBtn");
+  const signInBtn = byId("signInBtn");
+  const signOutBtn = byId("signOutBtn");
+  const generateBtn = byId("generateBtn");
+  const exportPdfBtn = byId("exportPdfBtn");
+  const uploadDocsBtn = byId("uploadDocsBtn");
+
+  if (signUpBtn) signUpBtn.addEventListener("click", signUp);
+  if (signInBtn) signInBtn.addEventListener("click", signIn);
+  if (signOutBtn) signOutBtn.addEventListener("click", signOutUser);
+  if (generateBtn) generateBtn.addEventListener("click", generate);
+  if (exportPdfBtn) exportPdfBtn.addEventListener("click", exportPDF);
+  if (uploadDocsBtn) uploadDocsBtn.addEventListener("click", uploadDocuments);
 }
 
 async function initAuth() {
