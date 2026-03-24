@@ -354,8 +354,6 @@ async function uploadDocuments() {
     return;
   }
 
-  setAdminStatus("Uploading and indexing...");
-
   let uploaded = 0;
 
   for (const file of files) {
