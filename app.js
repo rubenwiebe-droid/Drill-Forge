@@ -1215,15 +1215,13 @@ LESSON OUTLINE:
 ${procedureSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
 `;
 
-  if (flags.safety) {
-    output += `
+ if (flags.safety) {
+  const safetyItems = buildSafetyItems(matchData);
+  output += `
 SAFETY CONSIDERATIONS:
-- Conduct a safety briefing before beginning any demonstration or practical activity.
-- Confirm PPE, equipment readiness, control zones, communications, and stop-work authority.
-- Reassess hazards continuously as the lesson progresses.
-- Stop the evolution immediately if unsafe conditions, unsafe acts, or loss of control occur.
+${safetyItems.map(x => `- ${x}`).join("\n")}
 `;
-  }
+}
 
   if (depth === "Detailed" || depth === "Very Detailed") {
     output += `
