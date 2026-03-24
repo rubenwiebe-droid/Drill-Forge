@@ -951,6 +951,7 @@ function toTitleCase(text) {
 
 function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliveryStyle, audienceType, instructor, location, matchData) {
   const flags = includeFlags();
+  const topicLabel = toTitleCase(topic);
   const instructorText = instructor || (currentUser?.email || "TBD");
   const locationText = location || "TBD";
   const levelInstruction = format === "Detailed" ? "No aid from instructor" : "Aid from instructor";
@@ -960,16 +961,16 @@ function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliverySty
       ? "Simulated / Controlled"
       : "Mixed / Controlled";
 
-  const procedureSteps = detailedProcedureSteps(topic, deliveryStyle, depth, audienceType, nfpa);
-  const errors = commonErrors(topic, nfpa, audienceType);
-  const corrections = correctiveActions(topic, nfpa, audienceType);
-  const evalSteps = evaluationSequence(topic, nfpa, audienceType);
+  const procedureSteps = detailedProcedureSteps(topicLabel, deliveryStyle, depth, audienceType, nfpa);
+  const errors = commonErrors(topicLabel, nfpa, audienceType);
+  const corrections = correctiveActions(topicLabel, nfpa, audienceType);
+  const evalSteps = evaluationSequence(topicLabel, nfpa, audienceType);
 
   let output = `BRAMPTON FIRE & EMERGENCY SERVICES LESSON PLAN
 
 DATE: ${todayString()}
 INSTRUCTOR: ${instructorText}
-SUBJECT: ${topic}
+SUBJECT: ${topicLabel}
 Location: ${locationText}
 TOTAL TIME: ${duration}
 
@@ -977,8 +978,8 @@ STANDARDS:
 - ${nfpa}
 
 LEARNING OUTCOME(S):
-- The learner will be able to explain the purpose, hazards, and expected performance related to ${topic}.
-- The learner will be able to complete the required sequence, controls, or practical actions for ${topic} consistent with ${nfpa}.
+- The learner will be able to explain the purpose, hazards, and expected performance related to ${topicLabel}.
+- The learner will be able to complete the required sequence, controls, or practical actions for ${topicLabel} consistent with ${nfpa}.
 - The learner will be able to demonstrate safe, organized, and effective performance appropriate to the selected audience and delivery style.
 
 ESTIMATED TIME:
@@ -1015,11 +1016,20 @@ Teaching Aids:
 - Uploaded department reference material where available
 
 INTRODUCTION:
-- Introduce ${topic} and explain why it matters operationally.
+- Introduce ${topicLabel} and explain why it matters operationally.
 - Review the expected performance standard, learner responsibilities, and safety expectations.
 - Explain how the lesson will progress from instruction to demonstration to evaluation.
 - Identify what the learner must do correctly in order to meet the standard.
+`;
 
+  if (flags.references && matchData.references.length) {
+    output += `
+SUPPORTING REFERENCE EXCERPTS:
+${matchData.references.map(x => `- ${x.excerpt.replace(/^[-•\s]+/, "")}`).join("\n")}
+`;
+  }
+
+  output += `
 LESSON OUTLINE:
 ${procedureSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
 `;
@@ -1064,7 +1074,7 @@ NOTES:
   if (flags.assignment) {
     output += `
 ASSIGNMENT:
-${assignmentItems(topic, nfpa, depth).map(x => `- ${x}`).join("\n")}
+${assignmentItems(topicLabel, nfpa, depth).map(x => `- ${x}`).join("\n")}
 `;
   }
 
@@ -1074,7 +1084,7 @@ REFERENCE EXCERPTS:
 `;
 
     if (matchData.references.length) {
-      output += `${matchData.references.map(x => `- ${x.filename} - "${x.excerpt}"`).join("\n")}\n`;
+      output += `${matchData.references.map(x => `- ${x.filename} - "${x.excerpt.replace(/^[-•\s]+/, "")}"`).join("\n")}\n`;
     } else {
       output += `- No exact reference excerpt found in uploaded library.\n`;
     }
