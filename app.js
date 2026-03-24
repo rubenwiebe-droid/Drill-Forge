@@ -903,20 +903,26 @@ function scoreSection(section, topic) {
   if (keywordHits === 0) return -999;
 
   if (
-    text.includes("perform") ||
-    text.includes("ensure") ||
-    text.includes("confirm") ||
-    text.includes("maintain") ||
-    text.includes("check") ||
-    text.includes("verify") ||
-    text.includes("communicate") ||
-    text.includes("search pattern") ||
-    text.includes("crew integrity") ||
-    text.includes("orientation")
-  ) {
-    score += 6;
-  }
-
+  text.includes("perform") ||
+  text.includes("ensure") ||
+  text.includes("confirm") ||
+  text.includes("maintain") ||
+  text.includes("check") ||
+  text.includes("verify") ||
+  text.includes("communicate") ||
+  text.includes("search pattern") ||
+  text.includes("crew integrity") ||
+  text.includes("orientation") ||
+  text.includes("enter") ||
+  text.includes("exit") ||
+  text.includes("locate") ||
+  text.includes("control") ||
+  text.includes("assign") ||
+  text.includes("establish")
+) {
+  score += 10;
+}
+  
   if (text.split(" ").length < 12) score -= 5;
   if ((text.match(/\./g) || []).length < 1) score -= 3;
 
