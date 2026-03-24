@@ -980,6 +980,17 @@ function cleanReferenceName(filename) {
     .trim();
 }
 
+function dedupeByContent(items) {
+  const seen = new Set();
+
+  return items.filter(item => {
+    const key = `${item.filename}::${normalizeText(item.excerpt || item.content)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function findExactMatches(topic) {
   const uploadedJprs = [];
   const uploadedTeaching = [];
