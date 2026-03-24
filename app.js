@@ -882,6 +882,20 @@ function scoreSection(section, topic) {
   "foreword"
 ];
 
+ if (section.section_type === "safety") {
+  if (
+    !text.includes("hazard") &&
+    !text.includes("risk") &&
+    !text.includes("ppe") &&
+    !text.includes("control") &&
+    !text.includes("zone") &&
+    !text.includes("air") &&
+    !text.includes("visibility")
+  ) {
+    score -= 5;
+  }
+}
+  
 if (
   text.includes("perform") ||
   text.includes("ensure") ||
