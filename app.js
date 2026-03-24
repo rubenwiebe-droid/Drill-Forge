@@ -1022,13 +1022,6 @@ INTRODUCTION:
 - Identify what the learner must do correctly in order to meet the standard.
 `;
 
-  if (flags.references && matchData.references.length) {
-    output += `
-SUPPORTING REFERENCE EXCERPTS:
-${matchData.references.map(x => `- ${x.excerpt.replace(/^[-•\s]+/, "")}`).join("\n")}
-`;
-  }
-
   output += `
 LESSON OUTLINE:
 ${procedureSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
