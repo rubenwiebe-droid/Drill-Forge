@@ -1072,16 +1072,24 @@ ${assignmentItems(topicLabel, nfpa, depth).map(x => `- ${x}`).join("\n")}
   }
 
   if (flags.references) {
-    output += `
-REFERENCE EXCERPTS:
+  output += `
+REFERENCES:
 `;
 
-    if (matchData.references.length) {
-      output += `${matchData.references.map(x => `- ${x.filename} - "${x.excerpt.replace(/^[-•\s]+/, "")}"`).join("\n")}\n`;
-    } else {
-      output += `- No exact reference excerpt found in uploaded library.\n`;
-    }
+  if (matchData.jprs.length) {
+    const refs = matchData.jprs.map(jpr => {
+      const codeMatch = jpr.excerpt.match(/\d+\.\d+\.\d+/);
+      const code = codeMatch ? codeMatch[0] : "Unknown Section";
+      return `- ${nfpa} – Section ${code}`;
+    });
+
+    const uniqueRefs = [...new Set(refs)];
+
+    output += uniqueRefs.join("\n") + "\n";
+  } else {
+    output += `- ${nfpa}\n`;
   }
+}
 
   return output.trim();
 }
