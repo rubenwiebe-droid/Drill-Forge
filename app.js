@@ -1145,8 +1145,11 @@ function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliverySty
       ? "Simulated / Controlled"
       : "Mixed / Controlled";
 
-  const fallbackSteps = detailedProcedureSteps(topicLabel, deliveryStyle, depth, audienceType, nfpa);
-const procedureSteps = buildJprDrivenSteps(topicLabel, matchData, fallbackSteps);
+ const fallbackSteps = detailedProcedureSteps(topicLabel, deliveryStyle, depth, audienceType, nfpa);
+const jprDrivenSteps = buildJprDrivenSteps(topicLabel, matchData, fallbackSteps);
+const procedureSteps = (matchData.teaching && matchData.teaching.length)
+  ? buildUploadedContentSteps(topicLabel, matchData, jprDrivenSteps)
+  : jprDrivenSteps;
   const errors = commonErrors(topicLabel, nfpa, audienceType);
   const corrections = correctiveActions(topicLabel, nfpa, audienceType);
   const evalSteps = evaluationSequence(topicLabel, nfpa, audienceType);
