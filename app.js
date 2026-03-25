@@ -868,27 +868,6 @@ function scoreSection(section, topic) {
   const text = normalizeText(section.content);
   if (!text || text.length < 40) return -999;
 
-  if (/^\d+\./.test(text)) score += 8; // "1. Do this"
-if (text.includes("step")) score += 5;
-if (text.includes("procedure")) score += 5;
-if (text.includes("sequence")) score += 5;
-
-  const fluffPatterns = [
-  "this is why",
-  "you must define",
-  "find one that works",
-  "begin accelerating",
-  "for your organization",
-  "widely varying personal opinions",
-  "hold ourselves accountable",
-  "good luck",
-  "stay safe"
-];
-
-for (const fluff of fluffPatterns) {
-  if (text.includes(fluff)) return -999;
-}
-  
   const badPatterns = [
     "copyright",
     "all rights reserved",
@@ -910,6 +889,22 @@ for (const fluff of fluffPatterns) {
     if (text.includes(bad)) return -999;
   }
 
+  const fluffPatterns = [
+    "this is why",
+    "you must define",
+    "find one that works",
+    "begin accelerating",
+    "for your organization",
+    "widely varying personal opinions",
+    "hold ourselves accountable",
+    "good luck",
+    "stay safe"
+  ];
+
+  for (const fluff of fluffPatterns) {
+    if (text.includes(fluff)) return -999;
+  }
+
   const keywords = topicKeywords(topic);
   let score = 0;
   let keywordHits = 0;
@@ -924,26 +919,31 @@ for (const fluff of fluffPatterns) {
   if (keywordHits < 2) return -999;
 
   if (
-  text.includes("perform") ||
-  text.includes("ensure") ||
-  text.includes("confirm") ||
-  text.includes("maintain") ||
-  text.includes("check") ||
-  text.includes("verify") ||
-  text.includes("communicate") ||
-  text.includes("search pattern") ||
-  text.includes("crew integrity") ||
-  text.includes("orientation") ||
-  text.includes("enter") ||
-  text.includes("exit") ||
-  text.includes("locate") ||
-  text.includes("control") ||
-  text.includes("assign") ||
-  text.includes("establish")
-) {
-  score += 10;
-}
-  
+    text.includes("perform") ||
+    text.includes("ensure") ||
+    text.includes("confirm") ||
+    text.includes("maintain") ||
+    text.includes("check") ||
+    text.includes("verify") ||
+    text.includes("communicate") ||
+    text.includes("search pattern") ||
+    text.includes("crew integrity") ||
+    text.includes("orientation") ||
+    text.includes("enter") ||
+    text.includes("exit") ||
+    text.includes("locate") ||
+    text.includes("control") ||
+    text.includes("assign") ||
+    text.includes("establish")
+  ) {
+    score += 10;
+  }
+
+  if (/^\d+\./.test(text)) score += 8;
+  if (text.includes("step")) score += 5;
+  if (text.includes("procedure")) score += 5;
+  if (text.includes("sequence")) score += 5;
+
   if (text.split(" ").length < 12) score -= 5;
   if ((text.match(/\./g) || []).length < 1) score -= 3;
 
