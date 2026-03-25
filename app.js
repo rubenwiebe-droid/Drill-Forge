@@ -8,6 +8,92 @@ let docs = [];
 let docsLoaded = false;
 let currentUser = null;
 
+function setAuthStatus(message) {
+  const el = byId("authStatus");
+  if (el) el.textContent = message;
+}
+
+function updateAuthUI(user) {
+  currentUser = user;
+
+  const authBox = byId("authBox");
+  const generatorArea = byId("generatorArea");
+  const adminPanel = byId("adminPanel");
+
+  if (user) {
+    if (authBox) authBox.style.display = "none";
+    if (generatorArea) generatorArea.style.display = "block";
+    if (adminPanel) adminPanel.style.display = isAdmin(user) ? "block" : "none";
+    setStatus("Ready");
+  } else {
+    if (authBox) authBox.style.display = "block";
+    if (generatorArea) generatorArea.style.display = "none";
+    if (adminPanel) adminPanel.style.display = "none";
+    setAuthStatus("Not logged in");
+    setStatus("Ready");
+  }
+}
+
+async function signUp() {
+  setAuthStatus("Trying sign up...");
+
+  const email = byId("email")?.value.trim();
+  const password = byId("password")?.value;
+
+  if (!email || !password) {
+    setAuthStatus("Enter email and password");
+    return;
+  }
+
+  try {
+    const { error } = await supabaseClient.auth.signUp({ email, password });
+    setAuthStatus(error ? error.message : "Signup successful");
+  } catch (err) {
+    console.error(err);
+    setAuthStatus("Failed to sign up");
+  }
+}
+
+async function signIn() {
+  setAuthStatus("Trying sign in...");
+
+  const email = byId("email")?.value.trim();
+  const password = byId("password")?.value;
+
+  if (!email || !password) {
+    setAuthStatus("Enter email and password");
+    return;
+  }
+
+  try {
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      setAuthStatus(error.message);
+      return;
+    }
+
+    const { data } = await supabaseClient.auth.getUser();
+    updateAuthUI(data.user || null);
+    setAuthStatus("Signed in");
+  } catch (err) {
+    console.error(err);
+    setAuthStatus("Failed to sign in");
+  }
+}
+
+async function signOutUser() {
+  try {
+    await supabaseClient.auth.signOut();
+    updateAuthUI(null);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 function byId(id) {
   return document.getElementById(id);
 }
@@ -210,5 +296,15 @@ function init() {
   byId("uploadDocsBtn")?.addEventListener("click", uploadDocuments);
 }
 
+function init() {
+  byId("signUpBtn")?.addEventListener("click", signUp);
+  byId("signInBtn")?.addEventListener("click", signIn);
+  byId("signOutBtn")?.addEventListener("click", signOutUser);
+  byId("generateBtn")?.addEventListener("click", generate);
+  byId("exportPdfBtn")?.addEventListener("click", exportPDF);
+  byId("uploadDocsBtn")?.addEventListener("click", uploadDocuments);
+
+  initAuth();
+}
+
 window.onload = init;
-console.log("app.js loaded");
