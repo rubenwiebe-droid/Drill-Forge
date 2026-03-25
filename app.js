@@ -1723,7 +1723,7 @@ function generate() {
       return;
     }
 
-    const matchData = docsLoaded
+  const matchData = docsLoaded
   ? findExactMatches(topic, nfpa)
   : { jprs: [], teaching: [], safety: [], references: [] };
 
