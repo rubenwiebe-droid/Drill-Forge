@@ -292,14 +292,15 @@ const priority = parseInt(byId("docPriority")?.value || "5");
     const { data: insertedDoc, error: dbError } = await supabaseClient
       .from("document_library")
       .insert({
-        storage_path: path,
-        filename: file.name,
-        file_type: file.type || "",
-        extracted_text: extractedText,
-        uploaded_by: currentUser.id,
-        title: file.name,
-        parse_status: "processing"
-      })
+  storage_path: path,
+  filename: file.name,
+  file_type: file.type || "",
+  extracted_text: extractedText,
+  uploaded_by: currentUser.id,
+  title: file.name,
+  parse_status: "processing",
+  priority: priority
+})
       .select()
       .single();
 
