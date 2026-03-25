@@ -1491,17 +1491,15 @@ Environment:
 ${environment}
 `;
 
-  if (flags.jpr) {
-    output += `
-JPR(s):
-`;
+ output += matchData.jprs.map(x => {
+  const clean = x.excerpt
+    .replace(/\s+/g, " ")
+    .replace(/-$/, "")
+    .replace(/^[-•\s]+/, "")
+    .trim();
 
-    if (matchData.jprs.length) {
-      output += `${matchData.jprs.map(x => `- ${x.excerpt.replace(/^[-•\s]+/, "")}`).join("\n")}\n`;
-    } else {
-      output += `- No exact JPR wording found in uploaded library.\n`;
-    }
-  }
+  return `- ${clean}`;
+}).join("\n") + "\n";
 
   output += `
 Teaching Aids:
