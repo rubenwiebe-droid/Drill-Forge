@@ -258,7 +258,7 @@ async function uploadDocuments() {
 
   const docsInput = byId("docs");
   const files = docsInput ? docsInput.files : null;
-
+const priority = parseInt(byId("docPriority")?.value || "5");
   if (!files || !files.length) {
     setAdminStatus("Choose at least one file");
     return;
