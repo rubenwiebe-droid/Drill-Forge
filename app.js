@@ -1043,11 +1043,6 @@ function isNfpaDocument(filename) {
   );
 }
 
-function nfpaCodeFromStandard(nfpa) {
-  const match = (nfpa || "").match(/\d+/);
-  return match ? match[0] : "";
-}
-
 function findNfpaJprMatches(topic, nfpa) {
   const matches = [];
   const nfpaCode = nfpaCodeFromStandard(nfpa);
