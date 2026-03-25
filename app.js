@@ -1115,6 +1115,9 @@ function findNfpaJprMatches(topic, nfpa) {
       // For JPRs, allow even one strong keyword hit
       if (keywordHits < 1) continue;
 
+// HARD FILTER for search-specific JPRs
+if (topic.toLowerCase().includes("search") && !lower.includes("search")) continue;
+
       matches.push({
         filename: doc.name,
         sectionType: section.section_type || "jpr",
