@@ -1543,14 +1543,15 @@ if (teachingPoints.length) {
   output += "- Control doors and communicate benchmarks.\n";
   output += "- Conduct systematic room coverage.\n";
   output += "- Identify, communicate, and remove victims.\n";
-} `
+} else {
+  output += `
 COMMON ERRORS TO WATCH FOR:
 ${errors.map((x, i) => `${i + 1}. ${x}`).join("\n")}
 
 CORRECTIVE ACTIONS:
 ${corrections.map((x, i) => `${i + 1}. ${x}`).join("\n")}
 `;
-  }
+}
 
   if (flags.eval) {
     output += `
