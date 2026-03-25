@@ -1124,15 +1124,24 @@ function nfpaCodeFromStandard(nfpa) {
 function topicJprKeywords(topic) {
   const t = (topic || "").toLowerCase();
 
-  if (t.includes("search")) return ["search", "rescue", "victim", "structure", "team"];
-  if (t.includes("ladder")) return ["ladder", "raise", "carry", "climb"];
-  if (t.includes("vent")) return ["ventilation", "horizontal", "vertical", "opening"];
-  if (t.includes("rope")) return ["rope", "anchor", "belay", "system"];
-  if (t.includes("confined")) return ["confined", "space", "entry", "monitoring"];
+  if (t.includes("search")) {
+    return ["search", "rescue", "victim"];
+  }
+  if (t.includes("ladder")) {
+    return ["ladder", "carry", "raise", "climb"];
+  }
+  if (t.includes("vent")) {
+    return ["ventilation", "horizontal", "vertical", "opening"];
+  }
+  if (t.includes("rope")) {
+    return ["rope", "anchor", "belay", "system"];
+  }
+  if (t.includes("confined")) {
+    return ["confined", "space", "entry", "monitoring"];
+  }
 
   return t.split(/\s+/).filter(Boolean);
 }
-
 function cleanJprExcerpt(text, maxLen = 650) {
   let clean = (text || "")
     .replace(/\s+/g, " ")
