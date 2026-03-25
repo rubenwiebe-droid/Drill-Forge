@@ -1135,7 +1135,7 @@ function findNfpaJprMatches(topic, nfpa) {
     .slice(0, 3);
 }
 
-function findExactMatches(topic) {
+function findExactMatches(topic, nfpa) {
   const uploadedTeaching = [];
   const uploadedSafety = [];
 
