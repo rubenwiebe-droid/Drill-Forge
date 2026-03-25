@@ -126,23 +126,24 @@ function todayString() {
 ========================= */
 
 async function uploadDocuments() {
+  setAdminStatus("Upload button clicked");
+  console.log("uploadDocuments fired");
+
   if (!currentUser || !isAdmin(currentUser)) {
     setAdminStatus("Admin only");
     return;
   }
 
   const docsInput = byId("docs");
-  const files = docsInput?.files;
+  const files = docsInput ? docsInput.files : null;
+  const priority = parseInt(byId("docPriority")?.value || "5", 10);
 
-  if (!files?.length) {
-    setAdminStatus("Choose files");
+  if (!files || !files.length) {
+    setAdminStatus("Choose at least one file");
     return;
   }
 
-  const priority = parseInt(byId("docPriority")?.value || "5");
-
   setAdminStatus("Uploading...");
-
   for (const file of files) {
     const path = `shared/${Date.now()}-${file.name}`;
 
