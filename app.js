@@ -1212,7 +1212,7 @@ function findNfpaJprMatches(topic, nfpa) {
         heading: section.heading || "",
         subheading: section.subheading || "",
         content: text,
-        excerpt: cleanJprExcerpt(text),
+        excerpt: text.trim(),
         score
       });
     }
