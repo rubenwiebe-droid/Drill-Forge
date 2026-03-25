@@ -1452,12 +1452,6 @@ function buildLessonPlanOutput(topic, nfpa, duration, format, depth, deliverySty
       ? "Simulated / Controlled"
       : "Mixed / Controlled";
 
-  const fallbackSteps = detailedProcedureSteps(topicLabel, deliveryStyle, depth, audienceType, nfpa);
-  const jprDrivenSteps = buildJprDrivenSteps(topicLabel, matchData, fallbackSteps);
-  const procedureSteps = (matchData.teaching && matchData.teaching.length)
-    ? buildUploadedContentSteps(topicLabel, matchData, jprDrivenSteps)
-    : jprDrivenSteps;
-
   const errors = commonErrors(topicLabel, nfpa, audienceType);
   const corrections = correctiveActions(topicLabel, nfpa, audienceType);
   const evalSteps = evaluationSequence(topicLabel, nfpa, audienceType);
@@ -1491,15 +1485,25 @@ Environment:
 ${environment}
 `;
 
- output += matchData.jprs.map(x => {
-  const clean = x.excerpt
-    .replace(/\s+/g, " ")
-    .replace(/-$/, "")
-    .replace(/^[-•\s]+/, "")
-    .trim();
+  if (flags.jpr) {
+    output += `
+JPR(s):
+`;
 
-  return `- ${clean}`;
-}).join("\n") + "\n";
+    if (matchData.jprs.length) {
+      output += matchData.jprs.map(x => {
+        const clean = x.excerpt
+          .replace(/\s+/g, " ")
+          .replace(/-$/, "")
+          .replace(/^[-•\s]+/, "")
+          .trim();
+
+        return `- ${clean}`;
+      }).join("\n") + "\n";
+    } else {
+      output += `- No exact JPR wording found in uploaded library.\n`;
+    }
+  }
 
   output += `
 Teaching Aids:
@@ -1509,49 +1513,54 @@ Teaching Aids:
 - Training props, evolutions, or demo equipment as required
 - Uploaded department reference material where available
 
-INTRODUCTION:
-- Introduce ${topicLabel} and explain why it matters operationally.
-- Review the expected performance standard, learner responsibilities, and safety expectations.
-- Explain how the lesson will progress from instruction to demonstration to evaluation.
-- Identify what the learner must do correctly in order to meet the standard.
+OUTLINE
+
+${topicLabel}
+
+Introduction:
+- Explain when and why this skill is used operationally.
+- Identify expected performance, crew responsibilities, and safety considerations.
+- Reinforce how this skill supports overall fireground operations.
+
+Key Points:
 `;
 
-  output += "\nOUTLINE\n\n";
+  const teachingPoints = matchData.teaching || [];
 
-output += topic + "\n\n";
-
-output += "Introduction:\n";
-output += "- Explain when and why this skill is used operationally.\n";
-output += "- Identify expected performance, crew responsibilities, and safety considerations.\n";
-output += "- Reinforce how this skill supports overall fireground operations.\n\n";
-
-output += "Key Points:\n";
-
-const teachingPoints = matchData.teaching || [];
-
-if (teachingPoints.length) {
-  teachingPoints.forEach(item => {
-    const lines = item.excerpt.split(/[\.\n]/).filter(x => x.trim());
-    lines.slice(0, 6).forEach(line => {
-      output += "- " + line.trim() + "\n";
+  if (teachingPoints.length) {
+    teachingPoints.forEach(item => {
+      const lines = item.excerpt.split(/[\.\n]/).filter(x => x.trim());
+      lines.slice(0, 6).forEach(line => {
+        output += `- ${line.trim()}\n`;
+      });
     });
-  });
-} else {
-  output += "- Identify search objective and likely victim locations.\n";
-  output += "- Assign team roles, entry point, and orientation method.\n";
-  output += "- Maintain crew integrity and accountability throughout the search.\n";
-  output += "- Control doors and communicate benchmarks.\n";
-  output += "- Conduct systematic room coverage.\n";
-  output += "- Identify, communicate, and remove victims.\n";
-} else {
-  output += `
+  } else {
+    output += `- Identify search objective and likely victim locations.
+- Assign search team roles, entry point, and orientation method.
+- Maintain crew integrity and accountability throughout the search.
+- Control doors and communicate benchmarks.
+- Conduct systematic room coverage.
+- Identify, communicate, and remove victims.
+`;
+  }
+
+  if (flags.safety) {
+    const safetyItems = buildSafetyItems(matchData);
+    output += `
+SAFETY CONSIDERATIONS:
+${safetyItems.map(x => `- ${x}`).join("\n")}
+`;
+  }
+
+  if (depth === "Detailed" || depth === "Very Detailed") {
+    output += `
 COMMON ERRORS TO WATCH FOR:
 ${errors.map((x, i) => `${i + 1}. ${x}`).join("\n")}
 
 CORRECTIVE ACTIONS:
 ${corrections.map((x, i) => `${i + 1}. ${x}`).join("\n")}
 `;
-}
+  }
 
   if (flags.eval) {
     output += `
