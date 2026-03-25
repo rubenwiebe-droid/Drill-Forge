@@ -1173,7 +1173,7 @@ function buildUploadedContentSteps(topicLabel, matchData, fallbackSteps) {
     return fallbackSteps;
   }
 
-  for (const step of contentSteps) {
+ for (const step of contentSteps) {
   steps.push(`Instructor emphasis: ${step}`);
 }
 
