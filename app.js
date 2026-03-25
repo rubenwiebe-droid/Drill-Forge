@@ -1051,8 +1051,7 @@ function nfpaCodeFromStandard(nfpa) {
 function topicJprKeywords(topic) {
   const t = (topic || "").toLowerCase();
 
-  if (t.includes("search")) {
-    return ["search", "rescue", "victim", "team", "structure"];
+if (t.includes("search")) return ["search", "rescue", "victim"];
   }
   if (t.includes("ladder")) {
     return ["ladder", "carry", "raise", "climb"];
