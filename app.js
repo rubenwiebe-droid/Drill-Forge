@@ -1048,27 +1048,6 @@ function nfpaCodeFromStandard(nfpa) {
   return match ? match[0] : "";
 }
 
-function topicJprKeywords(topic) {
-  const t = (topic || "").toLowerCase();
-
-if (t.includes("search")) return ["search", "rescue", "victim"];
-  }
-  if (t.includes("ladder")) {
-    return ["ladder", "carry", "raise", "climb"];
-  }
-  if (t.includes("vent")) {
-    return ["ventilation", "horizontal", "vertical", "opening"];
-  }
-  if (t.includes("rope")) {
-    return ["rope", "anchor", "belay", "system"];
-  }
-  if (t.includes("confined")) {
-    return ["confined", "space", "entry", "monitoring"];
-  }
-
-  return t.split(/\s+/).filter(Boolean);
-}
-
 function findNfpaJprMatches(topic, nfpa) {
   const matches = [];
   const nfpaCode = nfpaCodeFromStandard(nfpa);
