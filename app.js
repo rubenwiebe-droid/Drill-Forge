@@ -1113,7 +1113,7 @@ function findNfpaJprMatches(topic, nfpa) {
       }
 
       // For JPRs, allow even one strong keyword hit
-      if (keywordHits < 2) continue;
+      if (keywordHits < 1) continue;
 
       matches.push({
         filename: doc.name,
