@@ -1139,7 +1139,7 @@ function findExactMatches(topic, nfpa) {
   const uploadedTeaching = [];
   const uploadedSafety = [];
 
-  const jprs = findNfpaJprMatches(topic);
+  const jprs = findNfpaJprMatches(topic, nfpa);
 
   for (const doc of docs) {
     const sections = doc.sections || [];
