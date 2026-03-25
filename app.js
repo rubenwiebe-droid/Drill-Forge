@@ -1602,8 +1602,8 @@ function generate() {
     }
 
     const matchData = docsLoaded
-      ? findExactMatches(topic)
-      : { jprs: [], teaching: [], safety: [], references: [] };
+  ? findExactMatches(topic, nfpa)
+  : { jprs: [], teaching: [], safety: [], references: [] };
 
     let output = "";
     if (type === "Lesson Plan") {
