@@ -292,11 +292,6 @@ ${matches.map((m, i) => `${i + 1}. ${m.content}`).join("\n")}
 ========================= */
 
 function init() {
-  byId("generateBtn")?.addEventListener("click", generate);
-  byId("uploadDocsBtn")?.addEventListener("click", uploadDocuments);
-}
-
-function init() {
   byId("signUpBtn")?.addEventListener("click", signUp);
   byId("signInBtn")?.addEventListener("click", signIn);
   byId("signOutBtn")?.addEventListener("click", signOutUser);
