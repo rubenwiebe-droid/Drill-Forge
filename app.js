@@ -1043,40 +1043,94 @@ function isNfpaDocument(filename) {
   );
 }
 
-function findNfpaJprMatches(topic) {
-  const nfpaJprs = [];
+function nfpaCodeFromStandard(nfpa) {
+  const match = (nfpa || "").match(/\d+/);
+  return match ? match[0] : "";
+}
+
+function topicJprKeywords(topic) {
+  const t = (topic || "").toLowerCase();
+
+  if (t.includes("search")) {
+    return ["search", "rescue", "victim", "team", "structure"];
+  }
+  if (t.includes("ladder")) {
+    return ["ladder", "carry", "raise", "climb"];
+  }
+  if (t.includes("vent")) {
+    return ["ventilation", "horizontal", "vertical", "opening"];
+  }
+  if (t.includes("rope")) {
+    return ["rope", "anchor", "belay", "system"];
+  }
+  if (t.includes("confined")) {
+    return ["confined", "space", "entry", "monitoring"];
+  }
+
+  return t.split(/\s+/).filter(Boolean);
+}
+
+function findNfpaJprMatches(topic, nfpa) {
+  const matches = [];
+  const nfpaCode = nfpaCodeFromStandard(nfpa);
+  const keywords = topicJprKeywords(topic);
 
   for (const doc of docs) {
-    if (!isNfpaDocument(doc.name)) continue;
+    const docName = (doc.name || "").toLowerCase();
+
+    // Only search the selected NFPA file(s)
+    if (!docName.includes(nfpaCode)) continue;
 
     const sections = doc.sections || [];
-    if (!sections.length) continue;
-
     for (const section of sections) {
-      const score = scoreSection(section, topic, doc.priority ?? 5);
-      if (score < 4) continue;
+      const text = section.content || "";
+      const lower = text.toLowerCase();
 
-      const item = {
+      // Must look like a JPR
+      const looksLikeJpr =
+        section.section_type === "jpr" ||
+        /^\s*\d+\.\d+\.\d+/.test(lower) ||
+        lower.includes("the firefighter shall") ||
+        lower.includes("the candidate shall") ||
+        lower.includes("job performance requirement");
+
+      if (!looksLikeJpr) continue;
+
+      let score = 0;
+
+      // JPR structure gets strong weight
+      if (/^\s*\d+\.\d+\.\d+/.test(lower)) score += 10;
+      if (lower.includes("the firefighter shall")) score += 8;
+      if (lower.includes("the candidate shall")) score += 8;
+      if (lower.includes("job performance requirement")) score += 6;
+
+      // Topic relevance
+      let keywordHits = 0;
+      for (const keyword of keywords) {
+        if (lower.includes(keyword)) {
+          keywordHits += 1;
+          score += 4;
+        }
+      }
+
+      // For JPRs, allow even one strong keyword hit
+      if (keywordHits < 1) continue;
+
+      matches.push({
         filename: doc.name,
-        sectionType: section.section_type || "general",
+        sectionType: section.section_type || "jpr",
         heading: section.heading || "",
         subheading: section.subheading || "",
-        content: section.content,
-        excerpt: cleanExcerpt(section.content),
+        content: text,
+        excerpt: cleanExcerpt(text, 320),
         score,
         priority: doc.priority ?? 5
-      };
-
-      if (
-        (section.section_type === "jpr" || /^\d+\.\d+\.\d+/.test(section.content || "")) &&
-        item.excerpt
-      ) {
-        nfpaJprs.push(item);
-      }
+      });
     }
   }
 
-  return dedupeByContent(nfpaJprs)
+  return dedupeByContent(matches)
+    .filter(x => x.excerpt)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 }
