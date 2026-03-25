@@ -1518,21 +1518,34 @@ INTRODUCTION:
 - Identify what the learner must do correctly in order to meet the standard.
 `;
 
-  output += `
-LESSON OUTLINE:
-${procedureSteps.map((x, i) => `${i + 1}. ${x}`).join("\n")}
-`;
+  output += "\nOUTLINE\n\n";
 
-  if (flags.safety) {
-    const safetyItems = buildSafetyItems(matchData);
-    output += `
-SAFETY CONSIDERATIONS:
-${safetyItems.map(x => `- ${x}`).join("\n")}
-`;
-  }
+output += topic + "\n\n";
 
-  if (depth === "Detailed" || depth === "Very Detailed") {
-    output += `
+output += "Introduction:\n";
+output += "- Explain when and why this skill is used operationally.\n";
+output += "- Identify expected performance, crew responsibilities, and safety considerations.\n";
+output += "- Reinforce how this skill supports overall fireground operations.\n\n";
+
+output += "Key Points:\n";
+
+const teachingPoints = matchData.teaching || [];
+
+if (teachingPoints.length) {
+  teachingPoints.forEach(item => {
+    const lines = item.excerpt.split(/[\.\n]/).filter(x => x.trim());
+    lines.slice(0, 6).forEach(line => {
+      output += "- " + line.trim() + "\n";
+    });
+  });
+} else {
+  output += "- Identify search objective and likely victim locations.\n";
+  output += "- Assign team roles, entry point, and orientation method.\n";
+  output += "- Maintain crew integrity and accountability throughout the search.\n";
+  output += "- Control doors and communicate benchmarks.\n";
+  output += "- Conduct systematic room coverage.\n";
+  output += "- Identify, communicate, and remove victims.\n";
+} `
 COMMON ERRORS TO WATCH FOR:
 ${errors.map((x, i) => `${i + 1}. ${x}`).join("\n")}
 
