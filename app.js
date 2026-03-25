@@ -1122,7 +1122,7 @@ function findNfpaJprMatches(topic, nfpa) {
         heading: section.heading || "",
         subheading: section.subheading || "",
         content: text,
-        excerpt: cleanExcerpt(text, 320),
+      excerpt: text.replace(/\s+/g, " ").trim(),
         score,
         priority: doc.priority ?? 5
       });
