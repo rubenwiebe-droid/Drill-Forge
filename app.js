@@ -211,3 +211,4 @@ function init() {
 }
 
 window.onload = init;
+console.log("app.js loaded");
