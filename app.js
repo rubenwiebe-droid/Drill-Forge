@@ -1029,7 +1029,7 @@ function findExactMatches(topic) {
 
     for (const section of sections) {
       const score = scoreSection(section, topic);
-      if (score < 6) continue;
+      if (score < 4) continue;
 
       const item = {
         filename: doc.name,
