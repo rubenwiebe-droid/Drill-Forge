@@ -916,7 +916,7 @@ function scoreSection(section, topic) {
     }
   }
 
-  if (keywordHits < 2) return -999;
+  if (keywordHits < 1) return -999;
 
   if (
     text.includes("perform") ||
