@@ -866,7 +866,7 @@ function topicKeywords(topic) {
 
 function scoreSection(section, topic) {
   const text = normalizeText(section.content);
-  if (!text || text.length < 40) return -999;
+  if (!text || text.length < 25) return -999;
 
   const badPatterns = [
     "copyright",
